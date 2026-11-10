@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>nav2-behavior-trees trace viewer</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Behavior-tree mission trace</h1>
+      <label>
+        Scenario
+        <select id="scenario-select" data-testid="scenario-select"></select>
+      </label>
+    </header>
+  <main class="layout">
+  <section class="panel map-panel">
+      <canvas id="map-canvas" width="720" height="480" data-testid="map-canvas"></canvas>
+      <div class="gauge-wrap">
+        <label>Battery</label>
+        <canvas id="battery-canvas" width="280" height="28" data-testid="battery-canvas"></canvas>
+      </div>
+    </section>
+  <section class="panel controls-panel">
+      <div class="readouts" data-testid="readouts">
+        <div>Tick: <span id="readout-tick" data-testid="readout-tick">0</span></div>
+        <div>
+          Battery:
+          <span id="readout-battery" data-testid="readout-battery">0.000</span>
+        </div>
+        <div>
+          Active leaf:
+          <span id="readout-active-leaf" data-testid="readout-active-leaf">—</span>
+        </div>
+        <div>
+          Coverage A/B/C:
+          <span id="readout-cov" data-testid="readout-cov">0 / 0 / 0</span>
+        </div>
+      </div>
+      <div class="transport" data-testid="transport">
+        <button type="button" id="btn-play" data-testid="btn-play">Play</button>
+        <button type="button" id="btn-pause" data-testid="btn-pause">Pause</button>
+        <button type="button" id="btn-step" data-testid="btn-step">Step</button>
+        <input
+          id="tick-scrub"
+          type="range"
+          min="0"
+          max="0"
+          value="0"
+          data-testid="tick-scrub"
+        />
+      </div>
+      <div class="tree-wrap">
+        <h2>Tree nodes</h2>
+        <ul id="tree-list" data-testid="tree-list"></ul>
+      </div>
+    </section>
+  </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

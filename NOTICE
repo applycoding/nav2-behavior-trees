@@ -1,0 +1,11 @@
+nav2-behavior-trees
+
+Copyright 2026 Arpan Bom
+
+This product bundles the following third-party software:
+
+BehaviorTree.CPP — MIT License
+https://github.com/BehaviorTree/BehaviorTree.CPP
+
+GoogleTest — BSD-3-Clause License
+https://github.com/google/googletest

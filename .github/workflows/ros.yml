@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Arpan Bom
+
+name: ROS
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  container:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+    container:
+      image: ros:humble-ros-base-jammy@sha256:d9bcf2e6f72df127fdee07048c2e87b1b4b9a59a74af0592f4489fc2844aa855
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Apt BT.CPP version
+        run: |
+          set -euo pipefail
+          dpkg-query -W ros-humble-behaviortree-cpp || true
+          ver=$(dpkg-query -W -f='${Version}' ros-humble-behaviortree-cpp 2>/dev/null || echo "")
+          if [ -n "$ver" ] && [[ "$ver" == 4.11.0* ]]; then
+            echo "Using apt behaviortree_cpp $ver"
+          else
+            echo "Apt BT.CPP not 4.11.0; ros package may FetchContent fallback (not used in v1 build)"
+          fi
+
+      - name: rosdep and build
+        run: |
+          set -eo pipefail
+          apt-get update
+          apt-get install -y python3-pip libssl-dev
+          set +u
+          source /opt/ros/humble/setup.bash
+          set -u
+          cd ros2
+          rosdep update
+          rosdep install --from-paths . --ignore-src -r -y
+          colcon build --packages-select nav2_bt_mission --cmake-args -DCMAKE_BUILD_TYPE=Release
+          set +u
+          source install/setup.bash
+          colcon test --packages-select nav2_bt_mission --event-handlers console_direct+
+          colcon test-result --verbose
