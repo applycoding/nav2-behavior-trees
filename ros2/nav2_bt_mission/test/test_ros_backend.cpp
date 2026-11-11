@@ -10,7 +10,6 @@
 #include <rclcpp/executors/single_threaded_executor.hpp>
 #include <rclcpp/rclcpp.hpp>
 
-#include <atomic>
 #include <chrono>
 #include <memory>
 #include <string>
@@ -49,29 +48,16 @@ class RosHarness {
     for (int i = 0; i < 64; ++i) {
       exec_.spin_some();
     }
-    spin_stop_ = false;
-    spin_thread_ = std::thread([this]() {
-      while (!spin_stop_ && rclcpp::ok()) {
-        exec_.spin_some();
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-      }
-    });
-    for (int i = 0; i < 200 && !backend_->remoteActionServersReady(); ++i) {
+    for (int i = 0; i < 400 && !backend_->remoteActionServersReady(); ++i) {
       exec_.spin_some();
       std::this_thread::sleep_for(std::chrono::milliseconds(5));
-    }
-  }
-
-  ~RosHarness() {
-    spin_stop_ = true;
-    if (spin_thread_.joinable()) {
-      spin_thread_.join();
     }
   }
 
   bt_core::RunMetrics run() {
     nav2_bt_mission::RosRunOptions opts;
     opts.executor = &exec_;
+    opts.skip_remote_ready = backend_->remoteActionServersReady();
     return nav2_bt_mission::runMissionRos(scenario_, treePath(), *backend_, client_, opts);
   }
 
@@ -84,8 +70,6 @@ class RosHarness {
   std::shared_ptr<rclcpp::Node> client_;
   std::shared_ptr<nav2_bt_mission::RosNavBackend> backend_;
   rclcpp::executors::SingleThreadedExecutor exec_;
-  std::atomic<bool> spin_stop_{true};
-  std::thread spin_thread_;
 };
 
 }  // namespace
