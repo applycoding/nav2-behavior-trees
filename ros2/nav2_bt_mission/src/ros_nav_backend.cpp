@@ -76,7 +76,7 @@ template <typename ActionT>
 bool acceptActionGoal(
     const rclcpp::Node::SharedPtr& node, rclcpp::Executor* exec,
     const typename rclcpp_action::Client<ActionT>::SharedPtr& client, const typename ActionT::Goal& goal,
-    const rclcpp_action::Client<ActionT>::SendGoalOptions& opts,
+    const typename rclcpp_action::Client<ActionT>::SendGoalOptions& opts,
     typename rclcpp_action::ClientGoalHandle<ActionT>::SharedPtr& out) {
   auto future = client->async_send_goal(goal, opts);
   if (!waitWithSpin(future, node, exec, std::chrono::seconds(10))) {
