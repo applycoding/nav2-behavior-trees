@@ -26,6 +26,7 @@ if [ "$built_head" != "$BT_TAG" ]; then
   exit 1
 fi
 
+rm -rf /tmp/btcpp-build "$INSTALL_PREFIX"
 cmake -S /tmp/btcpp-src -B /tmp/btcpp-build \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX="$INSTALL_PREFIX" \
