@@ -66,11 +66,28 @@ rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typ
 add_dependencies(nav2_bt_ros_lib ${PROJECT_NAME}__rosidl_generator_cpp)
 target_link_libraries(nav2_bt_ros_lib bt_core_ros ${cpp_typesupport_target})
 
+if(DEFINED ENV{BTCPP_INSTALL_LIB} AND NOT "$ENV{BTCPP_INSTALL_LIB}" STREQUAL "")
+  set(BTCPP_RPATH "$ENV{BTCPP_INSTALL_LIB}")
+else()
+  set(BTCPP_RPATH "")
+endif()
+
+function(nav2_bt_set_rpath target)
+  if(BTCPP_RPATH)
+    set_target_properties(${target} PROPERTIES
+      BUILD_RPATH "${BTCPP_RPATH}"
+      INSTALL_RPATH "${BTCPP_RPATH}"
+      BUILD_WITH_INSTALL_RPATH TRUE)
+  endif()
+endfunction()
+
 add_executable(mock_nav2_servers src/mock_servers_node.cpp)
 ament_target_dependencies(mock_nav2_servers rclcpp)
 target_link_libraries(mock_nav2_servers nav2_bt_ros_lib)
 
 add_executable(bt_mission_node src/mission_node.cpp)
+nav2_bt_set_rpath(mock_nav2_servers)
+nav2_bt_set_rpath(bt_mission_node)
 ament_target_dependencies(bt_mission_node rclcpp ament_index_cpp)
 target_link_libraries(bt_mission_node nav2_bt_ros_lib)
 
@@ -91,6 +108,7 @@ if(BUILD_TESTING)
     ${BT_REPO_ROOT}/tests/scenario_gates.cpp)
   ament_target_dependencies(test_ros_backend rclcpp)
   target_link_libraries(test_ros_backend nav2_bt_ros_lib)
+  nav2_bt_set_rpath(test_ros_backend)
   target_compile_definitions(test_ros_backend PRIVATE BT_SOURCE_DIR="${BT_REPO_ROOT}")
   set_tests_properties(test_ros_backend PROPERTIES TIMEOUT 3600)
 

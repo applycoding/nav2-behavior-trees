@@ -5,7 +5,6 @@
 #include "nav2_bt_mission/ros_runner.hpp"
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
-#include <rclcpp/executors/multi_threaded_executor.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include "bt_core/grid_sim.hpp"
@@ -24,21 +23,17 @@ int main(int argc, char** argv) {
   }
 
   auto node = std::make_shared<rclcpp::Node>("bt_mission_node");
-  auto exec = std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
-  exec->add_node(node);
-  std::thread spin_thread([exec]() { exec->spin(); });
+  nav2_bt_mission::RosNavBackend::useNodeSpinThread(true);
+  std::thread spin_thread([node]() { rclcpp::spin(node); });
 
-  nav2_bt_mission::RosNavBackend::useNodeSpinThread(false);
   auto sid = bt_core::scenarioFromName(scenario);
   nav2_bt_mission::RosNavBackend backend(node, nullptr);
 
   std::string pkg_share = ament_index_cpp::get_package_share_directory("nav2_bt_mission");
   std::string tree_xml = pkg_share + "/trees/mission.xml";
 
-  nav2_bt_mission::RosRunOptions opts;
-  opts.executor = exec.get();
   auto metrics =
-      nav2_bt_mission::runMissionRos(sid, tree_xml, backend, node, opts);
+      nav2_bt_mission::runMissionRos(sid, tree_xml, backend, node, {});
 
   rclcpp::shutdown();
   spin_thread.join();
