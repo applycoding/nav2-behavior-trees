@@ -38,6 +38,8 @@ class RosHarness {
     client_ =
         std::make_shared<rclcpp::Node>("ros_test_client_" + bt_core::scenarioName(scenario));
     backend_ = std::make_shared<nav2_bt_mission::RosNavBackend>(client_, nullptr);
+    backend_->setCoupledSim(sim_);
+    backend_->setMockPeer(mock_);
     exec_.add_node(mock_);
     exec_.add_node(client_);
     nav2_bt_mission::RosNavBackend::useNodeSpinThread(false);

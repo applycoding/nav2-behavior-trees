@@ -7,6 +7,7 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <rclcpp/rclcpp.hpp>
 
+#include "bt_core/frozen_world.hpp"
 #include "bt_core/grid_sim.hpp"
 
 #include <iostream>
@@ -25,6 +26,7 @@ int main(int argc, char** argv) {
   nav2_bt_mission::RosNavBackend::useNodeSpinThread(false);
 
   auto sid = bt_core::scenarioFromName(scenario);
+  bt_core::setFrozenWorldScenario(sid);
   nav2_bt_mission::RosNavBackend backend(node, nullptr);
 
   std::string pkg_share = ament_index_cpp::get_package_share_directory("nav2_bt_mission");

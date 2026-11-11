@@ -3,6 +3,7 @@
 
 #include "nav2_bt_mission/ros_runner.hpp"
 
+#include "bt_core/frozen_world.hpp"
 #include "bt_core/mission_context.hpp"
 #include "bt_core/mission_params.hpp"
 #include "bt_core/runner.hpp"
@@ -21,6 +22,7 @@ bt_core::RunMetrics runMissionRos(bt_core::ScenarioId scenario, const std::strin
   if (opts.executor != nullptr) {
     backend.setSpinExecutor(opts.executor);
   }
+  bt_core::setFrozenWorldScenario(scenario);
   backend.waitForRemoteReady();
   bt_core::RunMetrics metrics;
   metrics.scenario = bt_core::scenarioName(scenario);

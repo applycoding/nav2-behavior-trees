@@ -10,6 +10,8 @@ namespace bt_core {
 
 const GridSim& frozenWorld();
 
+void setFrozenWorldScenario(ScenarioId scenario);
+
 const GridSim& worldRef(NavBackend& backend);
 
 }  // namespace bt_core

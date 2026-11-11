@@ -202,6 +202,9 @@ std::optional<bt_core::GoalId> RosNavBackend::send(bt_core::GoalKind kind, bt_co
       }
       std::lock_guard<std::mutex> lock(mu_);
       goals_[id].nav_handle = handle;
+      if (auto mock = mock_peer_.lock()) {
+        goals_[id].sim_goal_id = mock->lookupGoalId(handle->get_goal_id());
+      }
       break;
     }
     case bt_core::GoalKind::FollowLane: {
@@ -218,6 +221,9 @@ std::optional<bt_core::GoalId> RosNavBackend::send(bt_core::GoalKind kind, bt_co
       }
       std::lock_guard<std::mutex> lock(mu_);
       goals_[id].follow_handle = handle;
+      if (auto mock = mock_peer_.lock()) {
+        goals_[id].sim_goal_id = mock->lookupGoalId(handle->get_goal_id());
+      }
       break;
     }
     case bt_core::GoalKind::BackUp: {
@@ -232,6 +238,9 @@ std::optional<bt_core::GoalId> RosNavBackend::send(bt_core::GoalKind kind, bt_co
       }
       std::lock_guard<std::mutex> lock(mu_);
       goals_[id].backup_handle = handle;
+      if (auto mock = mock_peer_.lock()) {
+        goals_[id].sim_goal_id = mock->lookupGoalId(handle->get_goal_id());
+      }
       break;
     }
     case bt_core::GoalKind::Wait: {
@@ -246,6 +255,9 @@ std::optional<bt_core::GoalId> RosNavBackend::send(bt_core::GoalKind kind, bt_co
       }
       std::lock_guard<std::mutex> lock(mu_);
       goals_[id].wait_handle = handle;
+      if (auto mock = mock_peer_.lock()) {
+        goals_[id].sim_goal_id = mock->lookupGoalId(handle->get_goal_id());
+      }
       break;
     }
     case bt_core::GoalKind::Dock: {
@@ -258,6 +270,9 @@ std::optional<bt_core::GoalId> RosNavBackend::send(bt_core::GoalKind kind, bt_co
       }
       std::lock_guard<std::mutex> lock(mu_);
       goals_[id].wait_handle = handle;
+      if (auto mock = mock_peer_.lock()) {
+        goals_[id].sim_goal_id = mock->lookupGoalId(handle->get_goal_id());
+      }
       break;
     }
     case bt_core::GoalKind::Undock: {
@@ -270,6 +285,9 @@ std::optional<bt_core::GoalId> RosNavBackend::send(bt_core::GoalKind kind, bt_co
       }
       std::lock_guard<std::mutex> lock(mu_);
       goals_[id].wait_handle = handle;
+      if (auto mock = mock_peer_.lock()) {
+        goals_[id].sim_goal_id = mock->lookupGoalId(handle->get_goal_id());
+      }
       break;
     }
     case bt_core::GoalKind::Charge: {
@@ -282,6 +300,9 @@ std::optional<bt_core::GoalId> RosNavBackend::send(bt_core::GoalKind kind, bt_co
       }
       std::lock_guard<std::mutex> lock(mu_);
       goals_[id].wait_handle = handle;
+      if (auto mock = mock_peer_.lock()) {
+        goals_[id].sim_goal_id = mock->lookupGoalId(handle->get_goal_id());
+      }
       break;
     }
     default: {
