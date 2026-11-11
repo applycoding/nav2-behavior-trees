@@ -56,6 +56,8 @@ class RosHarness {
     }
   }
 
+  ~RosHarness() { exec_.cancel(); }
+
   bt_core::RunMetrics run() {
     nav2_bt_mission::RosRunOptions opts;
     opts.executor = &exec_;
