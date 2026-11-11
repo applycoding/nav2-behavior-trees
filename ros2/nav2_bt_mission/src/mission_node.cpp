@@ -49,11 +49,16 @@ int main(int argc, char** argv) {
   opts.executor = &exec;
   auto metrics = nav2_bt_mission::runMissionRos(sid, tree_xml, backend, node, opts);
 
-  rclcpp::shutdown();
-
   std::cout << "success=" << metrics.success << " t=" << metrics.sim_time_sec << " ticks="
             << metrics.ticks << " lanes=" << metrics.lanes_done << " backup=" << metrics.backup
             << " sim_wait=" << metrics.sim_wait << " battery_zero=" << metrics.battery_zero
-            << " remote_steps=" << backend.remoteStepCount() << '\n';
+            << " remote_steps=" << backend.remoteStepCount() << std::endl;
+
+  exec.remove_node(node);
+  exec.cancel();
+  node.reset();
+  backend.setSpinExecutor(nullptr);
+  rclcpp::shutdown();
+
   return metrics.success ? 0 : 1;
 }

@@ -16,6 +16,7 @@ namespace nav2_bt_mission {
 
 namespace {
 bool spin_callbacks_on_node_thread_{false};
+}  // namespace
 
 template <typename FutureT>
 bool waitForFuture(FutureT& fut, std::chrono::milliseconds timeout) {
@@ -148,6 +149,29 @@ std::optional<bt_core::GoalId> RosNavBackend::send(bt_core::GoalKind kind, bt_co
   if (local_sim_) {
     std::lock_guard<std::mutex> lock(mu_);
     return local_sim_->send(kind, args);
+  }
+
+  if (coupled_sim_ && mock_peer_.lock()) {
+    auto sim_id = coupled_sim_->send(kind, args);
+    if (!sim_id) {
+      return std::nullopt;
+    }
+    bt_core::GoalState sim_st{bt_core::GoalStatus::RUNNING, bt_core::FailReason::NONE};
+    if (auto check = coupled_sim_->poll(*sim_id); check.status != bt_core::GoalStatus::RUNNING) {
+      sim_st = check;
+    }
+    bt_core::GoalId id{};
+    {
+      std::lock_guard<std::mutex> lock(mu_);
+      id = next_id_++;
+      GoalRecord rec;
+      rec.kind = kind;
+      rec.sim_goal_id = *sim_id;
+      rec.status = sim_st.status;
+      rec.reason = sim_st.reason;
+      goals_[id] = rec;
+    }
+    return id;
   }
 
   bt_core::GoalId id{};
@@ -332,6 +356,11 @@ bt_core::GoalState RosNavBackend::poll(bt_core::GoalId id) {
     auto sim_st = coupled_sim_->poll(rec.sim_goal_id);
     rec.status = sim_st.status;
     rec.reason = sim_st.reason;
+    if (rec.kind == bt_core::GoalKind::NavigateToPose && sim_st.status == bt_core::GoalStatus::SUCCEEDED &&
+        dock_goal_after_follow_cancel_) {
+      ++follow_canceled_before_dock_;
+      dock_goal_after_follow_cancel_ = false;
+    }
     return sim_st;
   }
   if (rec.status == bt_core::GoalStatus::RUNNING) {
@@ -355,6 +384,7 @@ void RosNavBackend::cancel(bt_core::GoalId id) {
     return;
   }
   bool cancel_follow{false};
+  bt_core::GoalId sim_gid{0};
   {
     std::lock_guard<std::mutex> lock(mu_);
     auto it = goals_.find(id);
@@ -362,6 +392,14 @@ void RosNavBackend::cancel(bt_core::GoalId id) {
       return;
     }
     cancel_follow = it->second.kind == bt_core::GoalKind::FollowLane;
+    sim_gid = it->second.sim_goal_id;
+  }
+  if (coupled_sim_ && sim_gid != 0) {
+  coupled_sim_->cancel(sim_gid);
+    if (cancel_follow) {
+      dock_goal_after_follow_cancel_ = true;
+    }
+    return;
   }
   if (cancel_follow) {
     follow_client_->async_cancel_all_goals();
