@@ -34,8 +34,8 @@ jobs:
           apt_ver=$(dpkg-query -W -f='${Version}' ros-humble-behaviortree-cpp 2>/dev/null || true)
           if [ -n "$apt_ver" ] && [[ "$apt_ver" == 4.11.0* ]]; then
             echo "CI using apt BT.CPP $apt_ver"
-          elif [ -d /opt/btcpp-4.11 ]; then
-            echo "CI using FetchContent install at /opt/btcpp-4.11"
+          elif [ -d /opt/btcpp-4.11 ] && [ "$(git -C /tmp/btcpp-src rev-parse HEAD 2>/dev/null)" = "8dad25dce26c3fd0787ff5c8790714bc6159dabe" ]; then
+            echo "CI using FetchContent BT.CPP 4.11.0 at commit 8dad25dce26c3fd0787ff5c8790714bc6159dabe"
           else
             echo "Neither apt nor FetchContent yielded BT.CPP 4.11.0" >&2
             exit 1
