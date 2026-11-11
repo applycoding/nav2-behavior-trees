@@ -16,20 +16,24 @@ set(BTCPP_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(BTCPP_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
 set(BTCPP_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
+set(_nav2_bt_project_testing ${BUILD_TESTING})
+
 FetchContent_Declare(
   behaviortree_cpp
   GIT_REPOSITORY https://github.com/BehaviorTree/BehaviorTree.CPP.git
   GIT_TAG 8dad25dce26c3fd0787ff5c8790714bc6159dabe)
-set(BUILD_TESTING OFF)
+set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(behaviortree_cpp)
-set(BUILD_TESTING ON)
 
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
   GIT_TAG 063de7e9578f82b369302001269680b4b1553359)
+set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
+
+set(BUILD_TESTING ${_nav2_bt_project_testing} CACHE BOOL "" FORCE)
 
 set(BT_CORE_SOURCES
     src/grid_sim.cpp

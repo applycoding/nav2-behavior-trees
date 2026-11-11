@@ -91,6 +91,19 @@ RunResult runMission(ScenarioId scenario, const std::string& tree_xml_path,
   result.metrics.sim_wait = state.metrics().sim_wait;
   result.metrics.backup = state.metrics().backup;
   result.metrics.halted_follow_lane = state.metrics().halted_follow_lane;
+  result.metrics.follow_lane_halt_tick = state.metrics().follow_lane_halt_tick;
+  result.metrics.next_goal_after_halt_kind = state.metrics().next_goal_after_halt_kind;
+  result.metrics.navigate_to_zone_attempts_zone_c = state.metrics().navigate_to_zone_attempts_zone_c;
+  result.metrics.recovery_count = state.metrics().recovery_count;
+  result.metrics.follow_lane_starts_b3 = state.metrics().follow_lane_starts_b3;
+  result.metrics.dock_count = state.metrics().dock_count;
+  result.metrics.critical_battery_event_tick = sim.criticalBatteryEventTick();
+  if (result.metrics.follow_lane_halt_tick < 0) {
+    result.metrics.follow_lane_halt_tick = sim.followLaneHaltTick();
+  }
+  if (result.metrics.next_goal_after_halt_kind < 0) {
+    result.metrics.next_goal_after_halt_kind = sim.nextGoalAfterHaltKind();
+  }
   result.metrics.ended_docked = final_sample.docked;
   result.metrics.cov_pct = final_sample.cov_pct;
   if (write_trace) tracer.writeMetrics(out_dir + "/metrics.json", result.metrics);

@@ -99,7 +99,7 @@ bool acceptActionGoal(
   (void)exec;
   (void)node;
   auto future = client->async_send_goal(goal, opts);
-  if (!waitForFuture(future, std::chrono::seconds(30))) {
+  if (!waitWithSpin(future, node, exec, std::chrono::seconds(30))) {
     return false;
   }
   out = future.get();
@@ -408,10 +408,11 @@ void RosNavBackend::step() {
   }
   auto req = std::make_shared<nav2_bt_mission::srv::SimStep::Request>();
   auto fut = step_client_->async_send_request(req);
-  if (!waitForFuture(fut, std::chrono::seconds(30))) {
+  if (!waitWithSpin(fut, node_, spin_executor_, std::chrono::seconds(30))) {
     return;
   }
   (void)fut.get();
+  ++remote_step_count_;
   tick_sample_valid_ = false;
   if (!spin_callbacks_on_node_thread_) {
     spinBackend(node_, spin_executor_);

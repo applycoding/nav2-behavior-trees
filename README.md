@@ -69,10 +69,10 @@ See `PLAN.md` §8 for full thresholds. Timing differs slightly from the throwawa
 | --- | --- |
 | 1 Build | `cmake --preset default && ctest` (`ci.yml`) |
 | 2 XML / registry | `Registry.*`, banned-node grep |
-| 3–11 Scenarios | `Scenarios.*` gtests |
+| 3-11 Scenarios | `Scenarios.*` gtests |
 | 12 Invariants | `expectGlobalInvariants` in scenario tests |
 | 13 Determinism | `Determinism.TraceBytesMatchAcrossRuns` |
-| 14–18 Mutants | `Mutants.*`, `MutantBuild.*` |
+| 14-18 Mutants | `Mutants.*`, `MutantBuild.*` |
 | 19 ROS | `ros.yml` → `colcon test` + readelf |
 | 20 Schema | `python/test_trace_schema.py` |
 | 21 Viewer | Vitest + Playwright (`web/`) → `docs/demo.png` |
@@ -90,6 +90,6 @@ ctest --test-dir build --output-on-failure
 
 **Viewer:** `cd web && npm ci && npm run copy-traces && npm test && npm run build`
 
-**ROS 2 (optional):** build with `colcon` inside pinned `ros:humble-ros-base-jammy` (see `ros.yml`). Manual Gazebo TB3: `ros2/launch/nav2_tb3_manual.launch.py` (documented, not CI).
+**ROS 2 (optional):** build with `colcon` inside pinned `ros:humble-ros-base-jammy` (see `ros.yml`). In-process gtests and the nominal launch test drive `RosNavBackend` against mock Nav2 action servers (no local `GridSim` shortcut). Manual Gazebo TB3: `ros2/nav2_bt_mission/launch/nav2_tb3_manual.launch.py` (documented, not CI).
 
 Planning sources: `PLAN.md`, `TASKS.md`. Deviations: `DEVIATIONS.md`.

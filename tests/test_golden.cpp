@@ -25,7 +25,8 @@ std::unordered_map<std::string, std::string> loadGoldenHashes() {
     std::string rest = path.substr(pos + marker.size());
     auto slash = rest.find('/');
     if (slash == std::string::npos) continue;
-  std::string scenario = rest.substr(0, slash);
+    if (rest.substr(slash + 1) != "trace.jsonl") continue;
+    const std::string scenario = rest.substr(0, slash);
     out[scenario] = hash;
   }
   return out;

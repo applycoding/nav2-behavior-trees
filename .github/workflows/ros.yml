@@ -19,22 +19,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Apt BT.CPP version
+      - name: Ensure BehaviorTree.CPP 4.11.0
         run: |
           set -euo pipefail
-          dpkg-query -W ros-humble-behaviortree-cpp || true
-          ver=$(dpkg-query -W -f='${Version}' ros-humble-behaviortree-cpp 2>/dev/null || echo "")
-          if [ -n "$ver" ] && [[ "$ver" == 4.11.0* ]]; then
-            echo "Using apt behaviortree_cpp $ver"
+          chmod +x ros2/scripts/ensure_btcpp_4_11.sh
+          apt-get update
+          apt-get install -y git libssl-dev
+          if ! ros2/scripts/ensure_btcpp_4_11.sh; then
+            exit 1
+          fi
+          if [ -d /opt/btcpp-4.11 ]; then
+            echo "CMAKE_PREFIX_PATH=/opt/btcpp-4.11:${CMAKE_PREFIX_PATH:-}" >> "$GITHUB_ENV"
+          fi
+          apt_ver=$(dpkg-query -W -f='${Version}' ros-humble-behaviortree-cpp 2>/dev/null || true)
+          if [ -n "$apt_ver" ] && [[ "$apt_ver" == 4.11.0* ]]; then
+            echo "CI using apt BT.CPP $apt_ver"
+          elif [ -d /opt/btcpp-4.11 ]; then
+            echo "CI using FetchContent install at /opt/btcpp-4.11"
           else
-            echo "Apt BT.CPP not 4.11.0; ros package may FetchContent fallback (not used in v1 build)"
+            echo "Neither apt nor FetchContent yielded BT.CPP 4.11.0" >&2
+            exit 1
           fi
 
       - name: rosdep and build
         run: |
           set -eo pipefail
           apt-get update
-          apt-get install -y python3-pip libssl-dev
+          apt-get install -y python3-pip
           set +u
           source /opt/ros/humble/setup.bash
           set -u

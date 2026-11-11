@@ -46,6 +46,7 @@ class RosNavBackend : public bt_core::NavBackend {
   double simTimeSec() const override;
 
   int followPathCanceledBeforeDockCount() const { return follow_canceled_before_dock_; }
+  int remoteStepCount() const { return remote_step_count_; }
 
   void waitForRemoteReady(std::chrono::milliseconds timeout = std::chrono::seconds(60));
 
@@ -97,6 +98,7 @@ class RosNavBackend : public bt_core::NavBackend {
   bt_core::GoalId next_id_{1};
   mutable std::mutex mu_;
   int follow_canceled_before_dock_{0};
+  int remote_step_count_{0};
   bool dock_goal_after_follow_cancel_{false};
   mutable int remote_tick_{0};
   mutable bt_core::WorldSample last_remote_sample_{};

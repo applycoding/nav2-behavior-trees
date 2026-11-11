@@ -22,11 +22,6 @@ bt_core::RunMetrics runMissionRos(bt_core::ScenarioId scenario, const std::strin
   if (opts.executor != nullptr) {
     backend.setSpinExecutor(opts.executor);
   }
-  if (backend.usesLocalSim()) {
-    backend.waitForRemoteReady();
-    const bt_core::RunResult rr = bt_core::runMission(scenario, tree_xml, "/tmp/bt_ros_local", false);
-    return rr.metrics;
-  }
   backend.waitForRemoteReady();
   bt_core::RunMetrics metrics;
   metrics.scenario = bt_core::scenarioName(scenario);
@@ -106,6 +101,14 @@ bt_core::RunMetrics runMissionRos(bt_core::ScenarioId scenario, const std::strin
   metrics.sim_wait = state.metrics().sim_wait;
   metrics.backup = state.metrics().backup;
   metrics.halted_follow_lane = state.metrics().halted_follow_lane;
+  metrics.follow_lane_halt_tick = state.metrics().follow_lane_halt_tick;
+  metrics.next_goal_after_halt_kind = state.metrics().next_goal_after_halt_kind;
+  metrics.navigate_to_zone_attempts_zone_c = state.metrics().navigate_to_zone_attempts_zone_c;
+  metrics.recovery_count = state.metrics().recovery_count;
+  metrics.follow_lane_starts_b3 = state.metrics().follow_lane_starts_b3;
+  metrics.dock_count = state.metrics().dock_count;
+  metrics.collisions = 0;
+  metrics.goal_overlap = 0;
   metrics.ended_docked = final_sample.docked;
   metrics.cov_pct = final_sample.cov_pct;
   (void)logger;

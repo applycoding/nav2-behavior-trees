@@ -11,6 +11,7 @@
 
 #include <iostream>
 #include <string>
+#include <thread>
 
 int main(int argc, char** argv) {
   rclcpp::init(argc, argv);
@@ -22,11 +23,11 @@ int main(int argc, char** argv) {
   }
 
   auto node = std::make_shared<rclcpp::Node>("bt_mission_node");
+  nav2_bt_mission::RosNavBackend::useNodeSpinThread(true);
+  std::thread spin_thread([node]() { rclcpp::spin(node); });
+
   auto sid = bt_core::scenarioFromName(scenario);
-  auto cfg = bt_core::configForScenario(sid);
-  bt_core::GridSim world = bt_core::GridSim::makeWorld(cfg);
-  auto sim = std::make_shared<bt_core::GridSim>(std::move(world));
-  nav2_bt_mission::RosNavBackend backend(node, sim);
+  nav2_bt_mission::RosNavBackend backend(node, nullptr);
 
   std::string pkg_share = ament_index_cpp::get_package_share_directory("nav2_bt_mission");
   std::string tree_xml = pkg_share + "/trees/mission.xml";
@@ -35,10 +36,11 @@ int main(int argc, char** argv) {
       nav2_bt_mission::runMissionRos(sid, tree_xml, backend, node, {});
 
   rclcpp::shutdown();
+  spin_thread.join();
 
   std::cout << "success=" << metrics.success << " t=" << metrics.sim_time_sec << " ticks="
             << metrics.ticks << " lanes=" << metrics.lanes_done << " backup=" << metrics.backup
             << " sim_wait=" << metrics.sim_wait << " battery_zero=" << metrics.battery_zero
-            << '\n';
+            << " remote_steps=" << backend.remoteStepCount() << '\n';
   return metrics.success ? 0 : 1;
 }

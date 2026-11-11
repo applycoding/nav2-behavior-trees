@@ -28,6 +28,8 @@ struct RunMetrics {
   int backup{0};
   int navigate_to_zone_attempts_zone_c{0};
   int recovery_count{0};
+  int follow_lane_starts_b3{0};
+  int critical_battery_event_tick{-1};
 
   int collisions{0};
   int goal_overlap{0};

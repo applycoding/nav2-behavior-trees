@@ -2,10 +2,38 @@ nav2-behavior-trees
 
 Copyright 2026 Arpan Bom
 
-This product bundles the following third-party software:
+Third-party components used to build, test, and publish this project (see REFERENCES.md for
+idea sources, not bundled code):
 
-BehaviorTree.CPP — MIT License
-https://github.com/BehaviorTree/BehaviorTree.CPP
+C++ (fetched at configure time unless noted)
+- BehaviorTree.CPP 4.11.0 (commit 8dad25dce26c3fd0787ff5c8790714bc6159dabe): MIT
+- GoogleTest 1.18.0 (commit 063de7e9578f82b369302001269680b4b1553359): BSD-3-Clause
+- OpenSSL libcrypto (Ubuntu libssl-dev, find_package OpenSSL): OpenSSL License
 
-GoogleTest — BSD-3-Clause License
-https://github.com/google/googletest
+Node / TypeScript (web viewer, npm ci)
+- Node.js 26
+- TypeScript 7.0.2
+- Vite 8.3.7
+- Vitest 5.1.0
+- @playwright/test 1.65.0
+- @types/node 22.20.5
+
+Python (trace schema tests)
+- pytest 9.2.0
+- iniconfig 2.3.1
+- packaging 26.3
+- pluggy 1.7.0
+- pygments 2.21.0
+
+GitHub Actions (pinned tags in .github/workflows/)
+- actions/checkout v7.0.1
+- actions/setup-node v7.1.0
+- actions/setup-python v7.1.0
+- actions/configure-pages v6.0.0
+- actions/upload-pages-artifact v5.0.0
+- actions/deploy-pages v5.0.1
+- actions/upload-artifact v7.0.2
+
+ROS 2 Humble (container ros:humble-ros-base-jammy): Apache-2.0 stack; nav2_msgs and peers via rosdep
+
+Idea references: REFERENCES.md (titles and pointers only; no third-party source is copied).

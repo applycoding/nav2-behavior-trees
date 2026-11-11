@@ -162,6 +162,7 @@ class ClearCostmap : public BT::SyncActionNode, CtxMixin {
   BT::NodeStatus tick() override {
     ctx_.backend.clearCostmap();
     ++ctx_.state.metrics().clear_costmap;
+    ++ctx_.state.metrics().recovery_count;
     return BT::NodeStatus::SUCCESS;
   }
 };
@@ -196,6 +197,7 @@ class GoalAction : public BT::StatefulActionNode {
         live->recordHaltedFollowLane(ctx_.backend.tick());
       }
       ++ctx_.state.metrics().halted_follow_lane;
+      ctx_.state.metrics().follow_lane_halt_tick = ctx_.backend.tick();
     }
     gid_ = 0;
   }
@@ -285,6 +287,10 @@ class NavigateToDock : public GoalAction {
     if (auto* live = dynamic_cast<GridSim*>(&ctx_.backend)) {
       live->onGoalSent(GoalKind::NavigateToPose);
     }
+    auto& met = ctx_.state.metrics();
+    if (met.follow_lane_halt_tick >= 0 && met.next_goal_after_halt_kind < 0) {
+      met.next_goal_after_halt_kind = static_cast<int>(GoalKind::NavigateToPose);
+    }
     ctx_.state.metrics().dock_count++;
     return BT::NodeStatus::RUNNING;
   }
@@ -329,6 +335,9 @@ class FollowLane : public GoalAction {
     ctx_.state.onFollowLaneStart();
     int z = ctx_.state.activeZone();
     int li = ctx_.state.laneIndex();
+    if (z == 1 && li == 3) {
+      ++ctx_.state.metrics().follow_lane_starts_b3;
+    }
     GoalArgs a;
     a.lane_zone = z;
     a.lane_index = li;
@@ -353,6 +362,7 @@ class BackUp : public GoalAction {
     auto id = ctx_.backend.send(GoalKind::BackUp, {});
     if (!id) return BT::NodeStatus::FAILURE;
     gid_ = *id;
+    ++ctx_.state.metrics().recovery_count;
     return BT::NodeStatus::RUNNING;
   }
   BT::NodeStatus onRunning() override {

@@ -112,8 +112,8 @@ export class ViewerApp {
     const leaf = activeLeaf(status, this.trace.nodesByUid);
 
     this.readoutTick.textContent = String(clamped);
-    this.readoutBattery.textContent = sample ? sample.battery.toFixed(3) : "—";
-    this.readoutLeaf.textContent = leaf ? leaf.type : "—";
+    this.readoutBattery.textContent = sample ? sample.battery.toFixed(3) : ", ";
+    this.readoutLeaf.textContent = leaf ? leaf.type : ", ";
     if (sample) {
       this.readoutCov.textContent = sample.cov.map((c) => c.toFixed(1)).join(" / ");
     }

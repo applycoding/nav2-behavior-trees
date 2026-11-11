@@ -486,6 +486,7 @@ void GridSim::applyScenarioHooks() {
     if (critical_battery_pending_ && active_ && active_->kind == GoalKind::FollowLane) {
       battery_ = std::min(battery_, 8.0);
       min_battery_ = std::min(min_battery_, battery_);
+      critical_battery_event_tick_ = tick_;
       critical_battery_pending_ = false;
     }
   }
@@ -668,7 +669,12 @@ void GridSim::step() {
   ++tick_;
 }
 
-void GridSim::onGoalSent(GoalKind k) { last_sent_kind_ = k; }
+void GridSim::onGoalSent(GoalKind k) {
+  last_sent_kind_ = k;
+  if (follow_lane_halt_tick_ >= 0 && next_goal_after_halt_kind_ < 0) {
+    next_goal_after_halt_kind_ = static_cast<int>(k);
+  }
+}
 
 void GridSim::recordHaltedFollowLane(int at_tick) {
   ++halted_follow_lane_count_;

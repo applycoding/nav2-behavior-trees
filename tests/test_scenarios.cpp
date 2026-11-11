@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Arpan Bom
 
+#include "bt_core/critical_battery_constants.hpp"
+#include "bt_core/nav_backend.hpp"
 #include "bt_core/runner.hpp"
 #include "bt_core/scenario_gates.hpp"
 
@@ -46,6 +48,10 @@ TEST(Scenarios, CriticalBattery) {
   for (double c : m.cov_pct) EXPECT_GE(c, 95.0);
   EXPECT_GT(m.min_battery, 2.0);
   EXPECT_LE(m.sim_time_sec, 590.0);
+  EXPECT_EQ(m.critical_battery_event_tick, bt_core::kCriticalBatteryEventTick);
+  EXPECT_EQ(m.follow_lane_halt_tick, bt_core::kCriticalBatteryFollowLaneHaltTick);
+  EXPECT_LE(m.follow_lane_halt_tick - m.critical_battery_event_tick, 2);
+  EXPECT_EQ(m.next_goal_after_halt_kind, static_cast<int>(bt_core::GoalKind::NavigateToPose));
   bt_core::test_gates::expectGlobalInvariants(m);
 }
 
@@ -84,6 +90,9 @@ TEST(Scenarios, UnreachableZone) {
   auto m = runProd(bt_core::ScenarioId::unreachable_zone);
   EXPECT_TRUE(m.success);
   EXPECT_EQ(m.zones_skipped, 1);
+  EXPECT_EQ(m.navigate_to_zone_attempts_zone_c, 4);
+  EXPECT_EQ(m.recovery_count, 4);
+  EXPECT_EQ(m.cov_pct[2], 0.0);
   EXPECT_GE(m.cov_pct[0], 95.0);
   EXPECT_GE(m.cov_pct[1], 95.0);
   EXPECT_EQ(m.lanes_done, 14);
@@ -104,6 +113,7 @@ TEST(Scenarios, LaneBlockedPerm) {
   EXPECT_TRUE(m.success);
   EXPECT_EQ(m.lanes_skipped, 1);
   EXPECT_EQ(m.lanes_done, 18);
+  EXPECT_EQ(m.follow_lane_starts_b3, 3);
   EXPECT_GE(m.cov_pct[1], 90.0);
   EXPECT_GE(m.cov_pct[0], 95.0);
   EXPECT_GE(m.cov_pct[2], 95.0);

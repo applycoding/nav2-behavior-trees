@@ -17,9 +17,20 @@ jobs:
           fetch-depth: 0
 
       - name: Authorship (criterion 23)
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.event.after }}
         run: |
           set -euo pipefail
           bad=0
+          if [ -n "${BEFORE:-}" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ] && [ -n "${AFTER:-}" ]; then
+            range="$BEFORE..$AFTER"
+          else
+            range="origin/main..HEAD"
+          fi
+          if ! git rev-parse "$range" >/dev/null 2>&1; then
+            range="HEAD"
+          fi
           while read -r sha; do
             author=$(git log -1 --format='%an <%ae>' "$sha")
             committer=$(git log -1 --format='%cn <%ce>' "$sha")
@@ -33,8 +44,16 @@ jobs:
               echo "Co-authored-by trailer on $sha"
               bad=1
             fi
-          done < <(git rev-list --no-merges origin/main..HEAD 2>/dev/null || git rev-list --no-merges HEAD)
+          done < <(git rev-list --no-merges $range)
           exit "$bad"
+
+      - name: Hygiene (NOTICE, dashes, README paths)
+        run: |
+          chmod +x ci/*.sh
+          ./ci/check_notice.sh
+          ./ci/check_unicode_dashes.sh
+          ./ci/check_readme_paths.sh
+          ./ci/check_public_traces.sh
 
       - name: Toolchain versions
         run: |
@@ -64,17 +83,26 @@ jobs:
       - name: Golden hashes
         run: |
           set -euo pipefail
-          if grep -qE '^[0-9a-f]{64}' traces/golden.sha256 2>/dev/null; then
-            while read -r hash path; do
-              [ -z "$hash" ] && continue
-              test_path="traces/ci/${path#traces/}"
-              test_path="${test_path%.jsonl}"
-              if [ -f "$test_path/trace.jsonl" ]; then
-                echo "$hash  $test_path/trace.jsonl" | sha256sum -c -
-              fi
-            done < traces/golden.sha256
-          else
-            echo "golden.sha256 placeholder; skipping compare"
+          count=0
+          while read -r hash path; do
+            [ -z "$hash" ] && continue
+            case "$path" in
+              traces/*/trace.jsonl) ;;
+              *) continue ;;
+            esac
+            scenario="${path#traces/}"
+            scenario="${scenario%/trace.jsonl}"
+            test_path="traces/ci/${scenario}/trace.jsonl"
+            if [ ! -f "$test_path" ]; then
+              echo "missing $test_path"
+              exit 1
+            fi
+            echo "$hash  $test_path" | sha256sum -c -
+            count=$((count + 1))
+          done < traces/golden.sha256
+          if [ "$count" -ne 9 ]; then
+            echo "expected 9 golden comparisons, got $count"
+            exit 1
           fi
 
       - name: Python trace schema (criterion 20)
@@ -87,17 +115,20 @@ jobs:
           python -m pip install --require-hashes -r python/requirements.txt
           python -m pytest python/test_trace_schema.py -v
 
-      - name: Web typecheck and unit tests
+      - name: Setup Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "26"
 
-      - name: npm test
+      - name: Web typecheck, unit tests, Playwright
         working-directory: web
         run: |
           npm ci
           npm run typecheck
           npm test
+          npx playwright install --with-deps chromium
+          npm run build
+          npm run test:e2e
 
       - name: Upload traces
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

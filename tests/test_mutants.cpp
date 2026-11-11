@@ -46,3 +46,10 @@ TEST(Mutants, NoRecoveryStuck) {
   EXPECT_GE(m.zones_skipped, 2);
 }
 
+TEST(Mutants, NoRecoveryPhantomObstacle) {
+  auto m = bt_core::runMission(bt_core::ScenarioId::phantom_obstacle,
+                               BT_SOURCE_DIR "/trees/mutants/no_recovery.xml", "/tmp/m", false)
+               .metrics;
+  EXPECT_EQ(m.zones_skipped, 3);
+  for (double c : m.cov_pct) EXPECT_EQ(c, 0.0);
+}

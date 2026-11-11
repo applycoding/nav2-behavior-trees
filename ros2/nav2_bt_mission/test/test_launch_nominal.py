@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Arpan Bom
 
+import re
 import unittest
 
 import launch_testing
@@ -58,3 +59,10 @@ class TestNominalProcesses(unittest.TestCase):
     def test_mission_runs(self, proc_info, mission_proc):
         launch_testing.asserts.assertExitCodes(
             proc_info, process=mission_proc, allowable_exit_codes=[0])
+
+    def test_mock_servers_were_stepped(self, proc_info, mission_proc):
+        text = proc_info.process_output(process=mission_proc).decode('utf-8', errors='replace')
+        m = re.search(r'remote_steps=(\d+)', text)
+        assert m is not None, text
+        steps = int(m.group(1))
+        assert steps > 2000, f'expected mock SimStep from mission, got remote_steps={steps}'

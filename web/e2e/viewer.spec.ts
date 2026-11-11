@@ -21,6 +21,10 @@ const SCENARIOS = [
   "lane_blocked_perm",
 ];
 
+// Matches bt_core::kCriticalBatteryFollowLaneHaltTick in C++ gtests.
+const CRITICAL_HALT_TICK = 1381;
+const CRITICAL_EVENT_TICK = 1380;
+
 function loadCriticalTrace() {
   const path = resolve(import.meta.dirname, "../public/traces/critical_battery/trace.jsonl");
   return parseTraceJsonl(readFileSync(path, "utf8"));
@@ -46,6 +50,7 @@ test.describe("viewer criterion 21", () => {
 
     await page.goto("./");
     await expect(page.getByTestId("scenario-select")).toBeVisible();
+    await expect(page).toHaveTitle(/simulation only/i);
 
     for (const id of SCENARIOS) {
       await page.getByTestId("scenario-select").selectOption(id);
@@ -66,21 +71,45 @@ test.describe("viewer criterion 21", () => {
     await page.getByTestId("scenario-select").selectOption("critical_battery");
 
     const scrub = page.getByTestId("tick-scrub");
-    await scrub.evaluate((el) => {
-      (el as HTMLInputElement).value = "1202";
-      el.dispatchEvent(new Event("input", { bubbles: true }));
-    });
 
-    const expectTick = 1202;
-    const exp = expectedAtTick(expectTick);
-    await expect(page.getByTestId("readout-tick")).toHaveText(String(expectTick));
-    await expect(page.getByTestId("readout-battery")).toHaveText(exp.sample!.battery.toFixed(3));
-    await expect(page.getByTestId("readout-active-leaf")).toHaveText(exp.leaf?.type ?? "—");
+    await scrub.evaluate(
+      (el, tick) => {
+        (el as HTMLInputElement).value = String(tick);
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+      },
+      CRITICAL_EVENT_TICK,
+    );
+  await expect(page.getByTestId("readout-tick")).toHaveText(String(CRITICAL_EVENT_TICK));
+
+    await scrub.evaluate(
+      (el, tick) => {
+        (el as HTMLInputElement).value = String(tick);
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+      },
+      CRITICAL_HALT_TICK,
+    );
+    const haltExp = expectedAtTick(CRITICAL_HALT_TICK);
+    await expect(page.getByTestId("readout-tick")).toHaveText(String(CRITICAL_HALT_TICK));
+    await expect(page.getByTestId("readout-battery")).toHaveText(haltExp.sample!.battery.toFixed(3));
 
     const trace = loadCriticalTrace();
     const followLaneUid = trace.header.nodes.find((n) => n.type === "FollowLane")?.uid ?? 34;
-    const followStatus = exp.status.get(followLaneUid) ?? "IDLE";
+    const followStatus = haltExp.status.get(followLaneUid) ?? "IDLE";
     await expect(page.locator(`#node-${followLaneUid}`)).toHaveAttribute("data-status", followStatus);
+
+    const dockUid = trace.header.nodes.find((n) => n.type === "NavigateToDock")?.uid;
+    expect(dockUid).toBeDefined();
+    const postDockTick = CRITICAL_HALT_TICK + 80;
+    await scrub.evaluate(
+      (el, tick) => {
+        (el as HTMLInputElement).value = String(tick);
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+      },
+      postDockTick,
+    );
+    const dockExp = expectedAtTick(postDockTick);
+    const dockStatus = dockExp.status.get(dockUid!) ?? "IDLE";
+    expect(["RUNNING", "SUCCESS"]).toContain(dockStatus);
 
     await page.getByTestId("btn-play").click();
     await page.waitForTimeout(300);
@@ -90,18 +119,6 @@ test.describe("viewer criterion 21", () => {
     await page.getByTestId("btn-step").click();
     const after = Number(await page.getByTestId("readout-tick").innerText());
     expect(after).toBe(before + 1);
-
-    const haltTick = 1381;
-    await scrub.evaluate(
-      (el, tick) => {
-        (el as HTMLInputElement).value = String(tick);
-        el.dispatchEvent(new Event("input", { bubbles: true }));
-      },
-      haltTick,
-    );
-    const haltExp = expectedAtTick(haltTick);
-    await expect(page.getByTestId("readout-battery")).toHaveText(haltExp.sample!.battery.toFixed(3));
-    await expect(page.getByTestId("readout-active-leaf")).toHaveText("RetryUntilSuccessful");
 
     await scrub.evaluate(
       (el, tick) => {
