@@ -47,7 +47,7 @@ def generate_test_description():
             SetEnvironmentVariable('ROS_DOMAIN_ID', '0'),
             *extra_env,
             mock_proc,
-            TimerAction(period=8.0, actions=[mission_proc]),
+            TimerAction(period=15.0, actions=[mission_proc]),
             RegisterEventHandler(OnProcessExit(target_action=mission_proc, on_exit=[Shutdown()])),
             ReadyToTest(),
         ]),

@@ -530,10 +530,8 @@ bool RosNavBackend::waitForRemoteReady(std::chrono::milliseconds timeout) {
         paired_mock ||
         (step_client_->wait_for_service(std::chrono::milliseconds(0)) &&
          sample_client_->wait_for_service(std::chrono::milliseconds(0)));
-    const bool clear_ready =
-        paired_mock || clear_client_->wait_for_service(std::chrono::milliseconds(0));
-    const bool actions = remoteActionServersReadyAfterSpin() && clear_ready && services;
-    if (services && actions) {
+    const bool actions = remoteActionServersReadyAfterSpin() && services;
+    if (actions) {
       return true;
     }
     if (!spin_callbacks_on_node_thread_) {
@@ -547,9 +545,7 @@ bool RosNavBackend::waitForRemoteReady(std::chrono::milliseconds timeout) {
       paired_mock ||
       (step_client_->wait_for_service(std::chrono::milliseconds(0)) &&
        sample_client_->wait_for_service(std::chrono::milliseconds(0)));
-  const bool clear_ready =
-      paired_mock || clear_client_->wait_for_service(std::chrono::milliseconds(0));
-  return services && remoteActionServersReady() && clear_ready;
+  return services && remoteActionServersReady();
 }
 
 bool RosNavBackend::followPathCanceledBeforeDockOrdered() const {
