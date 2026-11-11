@@ -375,7 +375,7 @@ bt_core::WorldSample RosNavBackend::snapshot() const {
   }
   auto req = std::make_shared<nav2_bt_mission::srv::GetWorldSample::Request>();
   auto fut = sample_client_->async_send_request(req);
-  if (!waitForFuture(fut, std::chrono::seconds(30))) {
+  if (!waitWithSpin(fut, node_, spin_executor_, std::chrono::seconds(30))) {
     return last_remote_sample_;
   }
   auto res = fut.get();
@@ -411,7 +411,10 @@ void RosNavBackend::step() {
   if (!waitWithSpin(fut, node_, spin_executor_, std::chrono::seconds(30))) {
     return;
   }
-  (void)fut.get();
+  auto res = fut.get();
+  if (res != nullptr && res->ok) {
+    ++remote_tick_;
+  }
   ++remote_step_count_;
   tick_sample_valid_ = false;
   if (!spin_callbacks_on_node_thread_) {
