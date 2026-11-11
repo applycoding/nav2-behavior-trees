@@ -84,15 +84,36 @@ function(nav2_bt_set_rpath target)
   endif()
 endfunction()
 
+function(nav2_bt_link_static_btcpp target)
+  foreach(_prefix IN LISTS CMAKE_PREFIX_PATH)
+    if(_prefix STREQUAL "")
+      continue()
+    endif()
+    set(_bt_a "${_prefix}/lib/libbehaviortree_cpp.a")
+    set(_tx_a "${_prefix}/lib/libtinyxml2.a")
+    if(EXISTS "${_bt_a}" AND EXISTS "${_tx_a}")
+      target_link_libraries(${target} PRIVATE "${_bt_a}" "${_tx_a}")
+      return()
+    endif()
+  endforeach()
+  if(EXISTS "/opt/btcpp-4.11/lib/libbehaviortree_cpp.a")
+    target_link_libraries(${target} PRIVATE
+      /opt/btcpp-4.11/lib/libbehaviortree_cpp.a
+      /opt/btcpp-4.11/lib/libtinyxml2.a)
+  endif()
+endfunction()
+
 add_executable(mock_nav2_servers src/mock_servers_node.cpp)
 ament_target_dependencies(mock_nav2_servers rclcpp)
 target_link_libraries(mock_nav2_servers nav2_bt_ros_lib)
+nav2_bt_link_static_btcpp(mock_nav2_servers)
 
 add_executable(bt_mission_node src/mission_node.cpp)
 nav2_bt_set_rpath(mock_nav2_servers)
 nav2_bt_set_rpath(bt_mission_node)
 ament_target_dependencies(bt_mission_node rclcpp ament_index_cpp)
 target_link_libraries(bt_mission_node nav2_bt_ros_lib)
+nav2_bt_link_static_btcpp(bt_mission_node)
 
 install(TARGETS mock_nav2_servers bt_mission_node
   DESTINATION lib/${PROJECT_NAME})
@@ -111,13 +132,10 @@ if(BUILD_TESTING)
     ${BT_REPO_ROOT}/tests/scenario_gates.cpp)
   ament_target_dependencies(test_ros_backend rclcpp)
   target_link_libraries(test_ros_backend nav2_bt_ros_lib)
+  nav2_bt_link_static_btcpp(test_ros_backend)
   nav2_bt_set_rpath(test_ros_backend)
   target_compile_definitions(test_ros_backend PRIVATE BT_SOURCE_DIR="${BT_REPO_ROOT}")
   set_tests_properties(test_ros_backend PROPERTIES TIMEOUT 3600)
-  if(BTCPP_RPATH)
-    set_tests_properties(test_ros_backend PROPERTIES
-      ENVIRONMENT "LD_LIBRARY_PATH=${BTCPP_RPATH}:$ENV{LD_LIBRARY_PATH}")
-  endif()
 
   ament_add_gtest(test_readelf_no_v3 test/test_readelf_no_v3.cpp)
   target_compile_definitions(test_readelf_no_v3 PRIVATE

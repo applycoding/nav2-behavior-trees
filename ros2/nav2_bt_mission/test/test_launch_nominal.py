@@ -8,7 +8,13 @@ import unittest
 import launch_testing
 import launch_testing.markers
 from launch import LaunchDescription
-from launch.actions import RegisterEventHandler, SetEnvironmentVariable, Shutdown, TimerAction
+from launch.actions import (
+    AppendEnvironmentVariable,
+    RegisterEventHandler,
+    SetEnvironmentVariable,
+    Shutdown,
+    TimerAction,
+)
 from launch.event_handlers import OnProcessExit
 from launch_ros.actions import Node
 from launch_testing.actions import ReadyToTest
@@ -16,14 +22,10 @@ from launch_testing.actions import ReadyToTest
 
 @launch_testing.markers.keep_alive
 def generate_test_description():
-    ld_paths = []
+    extra_env = []
     btcpp_lib = '/opt/btcpp-4.11/lib'
     if os.path.isdir(btcpp_lib):
-        ld_paths.append(btcpp_lib)
-    existing = os.environ.get('LD_LIBRARY_PATH', '')
-    if existing:
-        ld_paths.append(existing)
-    ld_env = ':'.join(ld_paths)
+        extra_env.append(AppendEnvironmentVariable('LD_LIBRARY_PATH', btcpp_lib, separator=':'))
 
     mock_proc = Node(
         package='nav2_bt_mission',
@@ -42,7 +44,7 @@ def generate_test_description():
         LaunchDescription([
             SetEnvironmentVariable('ROS_AUTOMATIC_DISCOVERY_RANGE', 'LOCALHOST'),
             SetEnvironmentVariable('ROS_LOCALHOST_ONLY', '1'),
-            SetEnvironmentVariable('LD_LIBRARY_PATH', ld_env),
+            *extra_env,
             mock_proc,
             TimerAction(period=10.0, actions=[mission_proc]),
             RegisterEventHandler(

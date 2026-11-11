@@ -29,6 +29,9 @@ TEST(Readelf, MissionBinaryHasNoBehaviorTreeV3) {
 
   EXPECT_EQ(output.find("behaviortree_cpp_v3"), std::string::npos)
       << "linked against behaviortree_cpp_v3";
-  EXPECT_NE(output.find("btcpp-4.11"), std::string::npos)
-      << "expected RUNPATH/RPATH to prefer /opt/btcpp-4.11";
+  const bool static_bt = output.find("libbehaviortree_cpp.so") == std::string::npos;
+  if (!static_bt) {
+    EXPECT_NE(output.find("btcpp-4.11"), std::string::npos)
+        << "expected RUNPATH/RPATH to prefer /opt/btcpp-4.11 when using shared BT.CPP";
+  }
 }
