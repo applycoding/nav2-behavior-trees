@@ -68,17 +68,17 @@ bt_core::RunMetrics runMissionRos(bt_core::ScenarioId scenario, const std::strin
   const bool spin_ros = !backend.usesLocalSim();
   while (root == BT::NodeStatus::RUNNING && backend.tick() < max_ticks) {
     backend.beginMissionTick();
-    if (spin_ros) {
+    if (spin_ros && !RosNavBackend::spinUsesNodeThread()) {
       spin_quiet();
     }
     status_changes_this_tick = 0;
     tick_var = backend.tick();
     root = tree.tickExactlyOnce();
-    if (spin_ros) {
+    if (spin_ros && !RosNavBackend::spinUsesNodeThread()) {
       spin_quiet();
     }
     backend.step();
-    if (spin_ros) {
+    if (spin_ros && !RosNavBackend::spinUsesNodeThread()) {
       spin_quiet();
     }
 

@@ -15,16 +15,34 @@
 namespace nav2_bt_mission {
 
 namespace {
+bool spin_callbacks_on_node_thread_{false};
 
 template <typename FutureT>
-bool waitWithSpin(FutureT& fut, const rclcpp::Node::SharedPtr& node, rclcpp::Executor* exec,
-                  std::chrono::milliseconds timeout) {
+bool waitForFuture(FutureT& fut, std::chrono::milliseconds timeout) {
   const auto deadline = std::chrono::steady_clock::now() + timeout;
   while (rclcpp::ok() && std::chrono::steady_clock::now() < deadline) {
     if (fut.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
       return true;
     }
-  if (exec != nullptr) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+  return fut.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready;
+}
+
+template <typename FutureT>
+bool waitWithSpin(FutureT& fut, const rclcpp::Node::SharedPtr& node, rclcpp::Executor* exec,
+                  std::chrono::milliseconds timeout) {
+  if (spin_callbacks_on_node_thread_) {
+    (void)node;
+    (void)exec;
+    return waitForFuture(fut, timeout);
+  }
+  const auto deadline = std::chrono::steady_clock::now() + timeout;
+  while (rclcpp::ok() && std::chrono::steady_clock::now() < deadline) {
+    if (fut.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
+      return true;
+    }
+    if (exec != nullptr) {
       exec->spin_some();
     } else {
       rclcpp::spin_some(node);
@@ -79,10 +97,9 @@ bool acceptActionGoal(
     const typename rclcpp_action::Client<ActionT>::SendGoalOptions& opts,
     typename rclcpp_action::ClientGoalHandle<ActionT>::SharedPtr& out) {
   (void)exec;
+  (void)node;
   auto future = client->async_send_goal(goal, opts);
-  const auto rc =
-      rclcpp::spin_until_future_complete(node, future, std::chrono::seconds(30));
-  if (rc != rclcpp::FutureReturnCode::SUCCESS) {
+  if (!waitForFuture(future, std::chrono::seconds(30))) {
     return false;
   }
   out = future.get();
@@ -90,6 +107,10 @@ bool acceptActionGoal(
 }
 
 }  // namespace
+
+void RosNavBackend::useNodeSpinThread(bool enabled) { spin_callbacks_on_node_thread_ = enabled; }
+
+bool RosNavBackend::spinUsesNodeThread() { return spin_callbacks_on_node_thread_; }
 
 void RosNavBackend::beginMissionTick() {
   if (!local_sim_) {
@@ -274,7 +295,7 @@ std::optional<bt_core::GoalId> RosNavBackend::send(bt_core::GoalKind kind, bt_co
 }
 
 bt_core::GoalState RosNavBackend::poll(bt_core::GoalId id) {
-  if (!local_sim_) {
+  if (!local_sim_ && !spin_callbacks_on_node_thread_) {
     spinBackend(node_, spin_executor_);
   }
   std::lock_guard<std::mutex> lock(mu_);
@@ -354,9 +375,7 @@ bt_core::WorldSample RosNavBackend::snapshot() const {
   }
   auto req = std::make_shared<nav2_bt_mission::srv::GetWorldSample::Request>();
   auto fut = sample_client_->async_send_request(req);
-  const auto rc =
-      rclcpp::spin_until_future_complete(node_, fut, std::chrono::seconds(30));
-  if (rc != rclcpp::FutureReturnCode::SUCCESS) {
+  if (!waitForFuture(fut, std::chrono::seconds(30))) {
     return last_remote_sample_;
   }
   auto res = fut.get();
@@ -389,14 +408,14 @@ void RosNavBackend::step() {
   }
   auto req = std::make_shared<nav2_bt_mission::srv::SimStep::Request>();
   auto fut = step_client_->async_send_request(req);
-  const auto rc =
-      rclcpp::spin_until_future_complete(node_, fut, std::chrono::seconds(30));
-  if (rc != rclcpp::FutureReturnCode::SUCCESS) {
+  if (!waitForFuture(fut, std::chrono::seconds(30))) {
     return;
   }
   (void)fut.get();
   tick_sample_valid_ = false;
-  spinBackend(node_, spin_executor_);
+  if (!spin_callbacks_on_node_thread_) {
+    spinBackend(node_, spin_executor_);
+  }
 }
 
 int RosNavBackend::tick() const {
@@ -440,7 +459,9 @@ void RosNavBackend::waitForRemoteReady(std::chrono::milliseconds timeout) {
     if (services && actions) {
       return;
     }
-    spinBackend(node_, spin_executor_);
+    if (!spin_callbacks_on_node_thread_) {
+      spinBackend(node_, spin_executor_);
+    }
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
 }

@@ -51,6 +51,9 @@ class RosNavBackend : public bt_core::NavBackend {
 
   void beginMissionTick();
 
+  static void useNodeSpinThread(bool enabled);
+  static bool spinUsesNodeThread();
+
   void setSpinExecutor(rclcpp::Executor* executor) { spin_executor_ = executor; }
 
   void setMockPeer(const std::shared_ptr<MockNav2>& mock);
