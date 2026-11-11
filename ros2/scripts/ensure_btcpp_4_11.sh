@@ -33,6 +33,7 @@ cmake -S /tmp/btcpp-src -B /tmp/btcpp-build \
   -DBTCPP_SQLITE_LOGGING=OFF \
   -DBTCPP_EXAMPLES=OFF \
   -DBTCPP_BUILD_TOOLS=OFF \
+  -DBTCPP_SHARED_LIBS=OFF \
   -DBUILD_TESTING=OFF
 
 cmake --build /tmp/btcpp-build --parallel

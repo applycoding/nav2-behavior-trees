@@ -51,11 +51,7 @@ jobs:
           set -u
           cd ros2
           rosdep update
-          skip_bt=""
-          if [ -d /opt/btcpp-4.11 ]; then
-            skip_bt="--skip-keys=behaviortree_cpp"
-          fi
-          rosdep install --from-paths . --ignore-src -r -y $skip_bt
+          rosdep install --from-paths . --ignore-src -r -y --skip-keys=behaviortree_cpp
           if [ -d /opt/btcpp-4.11 ]; then
             export LD_LIBRARY_PATH=/opt/btcpp-4.11/lib:${LD_LIBRARY_PATH:-}
             export BTCPP_INSTALL_LIB=/opt/btcpp-4.11/lib
