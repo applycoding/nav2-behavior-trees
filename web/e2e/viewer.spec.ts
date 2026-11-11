@@ -1,13 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Arpan Bom
 
-import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { expect, test } from "@playwright/test";
-
-import { activeLeaf, buildReplayIndex, sampleAt, seekStatus } from "../src/replay/engine";
-import { parseTraceJsonl } from "../src/trace/parse";
 
 const SCENARIOS = [
   "nominal",
@@ -21,23 +17,14 @@ const SCENARIOS = [
   "lane_blocked_perm",
 ];
 
-// Matches bt_core::kCriticalBatteryFollowLaneHaltTick in C++ gtests.
-const CRITICAL_HALT_TICK = 1381;
+// From traces/critical_battery/metrics.json and C++ gtests (bt_core::kCriticalBattery*).
 const CRITICAL_EVENT_TICK = 1380;
-
-function loadCriticalTrace() {
-  const path = resolve(import.meta.dirname, "../public/traces/critical_battery/trace.jsonl");
-  return parseTraceJsonl(readFileSync(path, "utf8"));
-}
-
-function expectedAtTick(tick: number) {
-  const trace = loadCriticalTrace();
-  const index = buildReplayIndex(trace);
-  const status = seekStatus(index, trace, tick);
-  const sample = sampleAt(trace, tick);
-  const leaf = activeLeaf(status, trace.nodesByUid);
-  return { status, sample, leaf };
-}
+const CRITICAL_HALT_TICK = 1381;
+const CRITICAL_EVENT_BATTERY = "81.112";
+const CRITICAL_HALT_BATTERY = "7.986";
+const CRITICAL_HALT_ROBOT_CELL = "35.500,5.500";
+const FOLLOW_LANE_UID = 34;
+const NAVIGATE_TO_DOCK_UID = 55;
 
 test.describe("viewer criterion 21", () => {
   test("loads manifest and all traces", async ({ page }) => {
@@ -61,6 +48,14 @@ test.describe("viewer criterion 21", () => {
     expect(failed).toEqual([]);
   });
 
+  test("report.json is a non-sample build manifest", async ({ request, baseURL }) => {
+    const res = await request.get(`${baseURL}report.json`);
+    expect(res.ok()).toBeTruthy();
+    const body = (await res.json()) as { sample?: boolean; git_sha?: string };
+    expect(body.sample).toBe(false);
+    expect(body.git_sha).toMatch(/^[0-9a-f]{40}$/);
+  });
+
   test("transport controls and critical_battery readouts", async ({ page }) => {
     const errors: string[] = [];
     page.on("console", (msg) => {
@@ -79,7 +74,8 @@ test.describe("viewer criterion 21", () => {
       },
       CRITICAL_EVENT_TICK,
     );
-  await expect(page.getByTestId("readout-tick")).toHaveText(String(CRITICAL_EVENT_TICK));
+    await expect(page.getByTestId("readout-tick")).toHaveText(String(CRITICAL_EVENT_TICK));
+    await expect(page.getByTestId("readout-battery")).toHaveText(CRITICAL_EVENT_BATTERY);
 
     await scrub.evaluate(
       (el, tick) => {
@@ -88,28 +84,13 @@ test.describe("viewer criterion 21", () => {
       },
       CRITICAL_HALT_TICK,
     );
-    const haltExp = expectedAtTick(CRITICAL_HALT_TICK);
     await expect(page.getByTestId("readout-tick")).toHaveText(String(CRITICAL_HALT_TICK));
-    await expect(page.getByTestId("readout-battery")).toHaveText(haltExp.sample!.battery.toFixed(3));
+    await expect(page.getByTestId("readout-battery")).toHaveText(CRITICAL_HALT_BATTERY);
+    await expect(page.getByTestId("map-canvas")).toHaveAttribute("data-robot-cell", CRITICAL_HALT_ROBOT_CELL);
 
-    const trace = loadCriticalTrace();
-    const followLaneUid = trace.header.nodes.find((n) => n.type === "FollowLane")?.uid ?? 34;
-    const followStatus = haltExp.status.get(followLaneUid) ?? "IDLE";
-    await expect(page.locator(`#node-${followLaneUid}`)).toHaveAttribute("data-status", followStatus);
+    await expect(page.locator(`#node-${FOLLOW_LANE_UID}`)).toHaveAttribute("data-status", "IDLE");
 
-    const dockUid = trace.header.nodes.find((n) => n.type === "NavigateToDock")?.uid;
-    expect(dockUid).toBeDefined();
-    const postDockTick = CRITICAL_HALT_TICK + 80;
-    await scrub.evaluate(
-      (el, tick) => {
-        (el as HTMLInputElement).value = String(tick);
-        el.dispatchEvent(new Event("input", { bubbles: true }));
-      },
-      postDockTick,
-    );
-    const dockExp = expectedAtTick(postDockTick);
-    const dockStatus = dockExp.status.get(dockUid!) ?? "IDLE";
-    expect(["RUNNING", "SUCCESS"]).toContain(dockStatus);
+    await expect(page.locator(`#node-${NAVIGATE_TO_DOCK_UID}`)).toHaveAttribute("data-status", "RUNNING");
 
     await page.getByTestId("btn-play").click();
     await page.waitForTimeout(300);
@@ -119,15 +100,6 @@ test.describe("viewer criterion 21", () => {
     await page.getByTestId("btn-step").click();
     const after = Number(await page.getByTestId("readout-tick").innerText());
     expect(after).toBe(before + 1);
-
-    await scrub.evaluate(
-      (el, tick) => {
-        (el as HTMLInputElement).value = String(tick);
-        el.dispatchEvent(new Event("input", { bubbles: true }));
-      },
-      900,
-    );
-    await expect(page.getByTestId("readout-tick")).toHaveText("900");
 
     await page.screenshot({ path: resolve(import.meta.dirname, "../../docs/demo.png") });
 

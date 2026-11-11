@@ -23,7 +23,7 @@ constexpr const char* kScenarios[] = {
 };
 
 std::string missionBinary() {
-  return std::string(BT_SOURCE_DIR) + "/build/bt_mission";
+  return std::string(BT_MISSION_EXECUTABLE);
 }
 
 int runMissionCli(const std::string& scenario, const std::string& out) {
@@ -45,6 +45,7 @@ TEST(Determinism, TraceBytesMatchInProcess) {
   bt_core::runMission(bt_core::ScenarioId::nominal, BT_SOURCE_DIR "/trees/mission.xml", out_a, true);
   bt_core::runMission(bt_core::ScenarioId::nominal, BT_SOURCE_DIR "/trees/mission.xml", out_b, true);
   EXPECT_EQ(readFile(out_a + "/trace.jsonl"), readFile(out_b + "/trace.jsonl"));
+  EXPECT_EQ(readFile(out_a + "/metrics.json"), readFile(out_b + "/metrics.json"));
 }
 
 TEST(Determinism, TraceBytesMatchAcrossProcesses) {
@@ -63,5 +64,6 @@ TEST(Determinism, TraceBytesMatchAcrossProcesses) {
     ASSERT_EQ(WEXITSTATUS(status), 0);
     ASSERT_EQ(runMissionCli(scenario, out_b), 0);
     EXPECT_EQ(readFile(out_a + "/trace.jsonl"), readFile(out_b + "/trace.jsonl")) << scenario;
+    EXPECT_EQ(readFile(out_a + "/metrics.json"), readFile(out_b + "/metrics.json")) << scenario;
   }
 }

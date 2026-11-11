@@ -24,6 +24,7 @@ TEST(Scenarios, Nominal) {
   EXPECT_EQ(m.charge_cycles, 0);
   EXPECT_GE(m.min_battery, 50.0);
   EXPECT_EQ(m.lanes_done, 19);
+  EXPECT_EQ(m.halted_follow_lane, 0);
   bt_core::test_gates::expectGlobalInvariants(m);
 }
 
@@ -52,6 +53,7 @@ TEST(Scenarios, CriticalBattery) {
   EXPECT_EQ(m.follow_lane_halt_tick, bt_core::kCriticalBatteryFollowLaneHaltTick);
   EXPECT_LE(m.follow_lane_halt_tick - m.critical_battery_event_tick, 2);
   EXPECT_EQ(m.next_goal_after_halt_kind, static_cast<int>(bt_core::GoalKind::NavigateToPose));
+  EXPECT_EQ(m.next_goal_after_halt_role, static_cast<int>(bt_core::NavPoseRole::Dock));
   bt_core::test_gates::expectGlobalInvariants(m);
 }
 

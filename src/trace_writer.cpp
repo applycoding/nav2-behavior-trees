@@ -113,6 +113,7 @@ void TraceWriter::writeMetrics(const std::string& path, const RunMetrics& m) con
       << ",\"follow_lane_halt_tick\":" << m.follow_lane_halt_tick
       << ",\"critical_battery_event_tick\":" << m.critical_battery_event_tick
       << ",\"next_goal_after_halt_kind\":" << m.next_goal_after_halt_kind
+      << ",\"next_goal_after_halt_role\":" << m.next_goal_after_halt_role
       << ",\"status_changes_max_per_tick\":" << m.status_changes_max_per_tick
       << ",\"ended_docked\":" << (m.ended_docked ? "true" : "false")
       << ",\"battery_zero\":" << (m.battery_zero ? "true" : "false") << "}\n";

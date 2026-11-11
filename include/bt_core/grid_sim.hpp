@@ -93,11 +93,12 @@ class GridSim : public NavBackend {
   Lane laneAt(int zone_id, int lane_idx) const;
 
   GoalKind lastSentGoalKind() const { return last_sent_kind_; }
-  void onGoalSent(GoalKind k);
+  void onGoalSent(GoalKind k, NavPoseRole nav_role = NavPoseRole::None);
 
   int followLaneHaltTick() const { return follow_lane_halt_tick_; }
   int criticalBatteryEventTick() const { return critical_battery_event_tick_; }
   int nextGoalAfterHaltKind() const { return next_goal_after_halt_kind_; }
+  int nextGoalAfterHaltRole() const { return next_goal_after_halt_role_; }
 
   bool isStuckCondition() const override { return last_fail_reason_ == FailReason::STUCK; }
 
@@ -182,6 +183,7 @@ class GridSim : public NavBackend {
   int follow_lane_halt_tick_{-1};
   int critical_battery_event_tick_{-1};
   int next_goal_after_halt_kind_{-1};
+  int next_goal_after_halt_role_{0};
 
   // Scenario state
   bool doors_ac_closed_{false};

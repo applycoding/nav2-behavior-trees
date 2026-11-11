@@ -12,8 +12,10 @@ namespace {
 constexpr char kGlobalCostmapClear[] = "/global_costmap/clear_entirely_global_costmap";
 }  // namespace
 
-MockNav2::MockNav2(const rclcpp::NodeOptions& options, std::shared_ptr<bt_core::GridSim> sim)
-    : Node("mock_nav2_servers", options), sim_(std::move(sim)) {
+MockNav2::MockNav2(const rclcpp::NodeOptions& options, std::shared_ptr<bt_core::GridSim> sim,
+                   bool reject_all_goals)
+    : Node("mock_nav2_servers", options), sim_(std::move(sim)),
+      reject_all_goals_(reject_all_goals) {
   using GoalHandleNavigateToPose = rclcpp_action::ServerGoalHandle<NavigateToPose>;
   using GoalHandleFollowPath = rclcpp_action::ServerGoalHandle<FollowPath>;
   using GoalHandleBackUp = rclcpp_action::ServerGoalHandle<BackUp>;
@@ -22,10 +24,16 @@ MockNav2::MockNav2(const rclcpp::NodeOptions& options, std::shared_ptr<bt_core::
   nav_server_ = rclcpp_action::create_server<NavigateToPose>(
       this, "navigate_to_pose",
       [this](const rclcpp_action::GoalUUID& uuid, std::shared_ptr<const NavigateToPose::Goal> goal) {
+        if (reject_all_goals_) {
+          return rclcpp_action::GoalResponse::REJECT;
+        }
         std::lock_guard<std::mutex> lock(sim_mu_);
         bt_core::GoalArgs args{};
         args.target_x = goal->pose.pose.position.x;
         args.target_y = goal->pose.pose.position.y;
+        const double dx = args.target_x - (static_cast<double>(sim_->dockCellX()) + 0.5);
+        const double dy = args.target_y - (static_cast<double>(sim_->dockCellY()) + 0.5);
+        args.nav_role = (dx * dx + dy * dy < 0.01) ? bt_core::NavPoseRole::Dock : bt_core::NavPoseRole::Zone;
         bt_core::GoalId gid = registerGoal(uuid, bt_core::GoalKind::NavigateToPose, args);
         if (gid == 0) {
           RCLCPP_ERROR(get_logger(), "reject NavigateToPose goal (sim busy or failed to start)");
@@ -53,6 +61,9 @@ MockNav2::MockNav2(const rclcpp::NodeOptions& options, std::shared_ptr<bt_core::
   follow_server_ = rclcpp_action::create_server<FollowPath>(
       this, "follow_path",
       [this](const rclcpp_action::GoalUUID& uuid, std::shared_ptr<const FollowPath::Goal> goal) {
+        if (reject_all_goals_) {
+          return rclcpp_action::GoalResponse::REJECT;
+        }
         int zone = 0;
         int lane = 0;
         if (!parseLaneTag(goal->controller_id, zone, lane)) {
@@ -90,6 +101,9 @@ MockNav2::MockNav2(const rclcpp::NodeOptions& options, std::shared_ptr<bt_core::
       this, "backup",
       [this](const rclcpp_action::GoalUUID& uuid, std::shared_ptr<const BackUp::Goal> goal) {
         (void)goal;
+        if (reject_all_goals_) {
+          return rclcpp_action::GoalResponse::REJECT;
+        }
         std::lock_guard<std::mutex> lock(sim_mu_);
         bt_core::GoalId gid = registerGoal(uuid, bt_core::GoalKind::BackUp, {});
         if (gid == 0) {
@@ -119,6 +133,9 @@ MockNav2::MockNav2(const rclcpp::NodeOptions& options, std::shared_ptr<bt_core::
     slot = rclcpp_action::create_server<Wait>(
         this, name,
         [this, kind, name](const rclcpp_action::GoalUUID& uuid, std::shared_ptr<const Wait::Goal> goal) {
+          if (reject_all_goals_) {
+            return rclcpp_action::GoalResponse::REJECT;
+          }
           std::lock_guard<std::mutex> lock(sim_mu_);
           bt_core::GoalArgs args{};
           if (kind == bt_core::GoalKind::Wait) {
@@ -185,6 +202,9 @@ MockNav2::MockNav2(const rclcpp::NodeOptions& options, std::shared_ptr<bt_core::
           response->cov_pct[i] = s.cov_pct[i];
         }
         response->tick = sim_->tick();
+        response->collisions = sim_->collisions();
+        response->goal_overlap = sim_->goalOverlap();
+        response->min_battery = sim_->minBattery();
       });
 }
 

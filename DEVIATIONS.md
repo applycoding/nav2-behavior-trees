@@ -10,7 +10,21 @@
 
 ## Mission duration vs prototype section 9
 
-Prototype runtimes are listed in PLAN section 9 (e.g. nominal 263.7 s). This build's `GridSim` plus the goal poll and cancel fix yields slightly different times (e.g. nominal about 309 s, critical about 441 s) while remaining within the section 8 ceiling gates (`t <= 400` / `<= 590` where applicable). Golden SHA-256 hashes in `traces/golden.sha256` reflect this implementation.
+Prototype runtimes (PLAN section 9) and this build on `GridSim` with g++-13 on ubuntu-24.04. Every scenario is 12 to 18% above the prototype, outside the TASKS ±10% band. Section 8 ceiling gates still pass.
+
+| Scenario | Prototype `t` (s) | Measured `t` (s) | Δ |
+| --- | ---: | ---: | ---: |
+| `nominal` | 263.7 | 308.8 | +17.1% |
+| `low_battery` | 372.3 | 434.1 | +16.6% |
+| `critical_battery` | 391.8 | 441.3 | +12.6% |
+| `blocked_corridor` | 273.9 | 319.0 | +16.5% |
+| `phantom_obstacle` | 268.8 | 313.9 | +16.8% |
+| `stuck` | 270.0 | 318.2 | +17.9% |
+| `unreachable_zone` | 208.5 | 240.7 | +15.4% |
+| `lane_obstacle` | 278.3 | 322.8 | +16.0% |
+| `lane_blocked_perm` | 298.0 | 341.2 | +14.5% |
+
+**Cause:** shipped code runs the full nav goal poll, cancel-before-replace path, and tick-aligned backend stepping. The throwaway prototype used g++ 14 and slightly different motion timing. Golden SHA-256 hashes in `traces/golden.sha256` are for trace and metrics bytes on this toolchain only; clang with libc++ produces different traces for all nine scenarios.
 
 ## Frozen map geometry for non-GridSim backends
 

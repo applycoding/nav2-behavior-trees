@@ -20,7 +20,7 @@ const scenarios = [
   "lane_blocked_perm",
 ];
 
-const sources = [join(root, "traces/web_gen"), join(root, "traces")];
+const sources = [join(root, "traces"), join(root, "traces/web_gen")];
 
 function resolveScenarioDir(id) {
   for (const base of sources) {

@@ -669,10 +669,13 @@ void GridSim::step() {
   ++tick_;
 }
 
-void GridSim::onGoalSent(GoalKind k) {
+void GridSim::onGoalSent(GoalKind k, NavPoseRole nav_role) {
   last_sent_kind_ = k;
   if (follow_lane_halt_tick_ >= 0 && next_goal_after_halt_kind_ < 0) {
     next_goal_after_halt_kind_ = static_cast<int>(k);
+    if (k == GoalKind::NavigateToPose) {
+      next_goal_after_halt_role_ = static_cast<int>(nav_role);
+    }
   }
 }
 

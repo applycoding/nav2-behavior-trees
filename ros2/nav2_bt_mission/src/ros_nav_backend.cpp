@@ -120,8 +120,6 @@ void RosNavBackend::beginMissionTick() {
 
 void RosNavBackend::setMockPeer(const std::shared_ptr<MockNav2>& mock) { mock_peer_ = mock; }
 
-void RosNavBackend::setCoupledSim(std::shared_ptr<bt_core::GridSim> sim) { coupled_sim_ = std::move(sim); }
-
 RosNavBackend::RosNavBackend(rclcpp::Node::SharedPtr node, std::shared_ptr<bt_core::GridSim> local_sim)
     : node_(std::move(node)), local_sim_(std::move(local_sim)) {
   nav_client_ = rclcpp_action::create_client<NavigateToPose>(node_, "/mock_nav2_servers/navigate_to_pose");
@@ -148,29 +146,6 @@ std::optional<bt_core::GoalId> RosNavBackend::send(bt_core::GoalKind kind, bt_co
   if (local_sim_) {
     std::lock_guard<std::mutex> lock(mu_);
     return local_sim_->send(kind, args);
-  }
-
-  if (coupled_sim_ && mock_peer_.lock()) {
-    auto sim_id = coupled_sim_->send(kind, args);
-    if (!sim_id) {
-      return std::nullopt;
-    }
-    bt_core::GoalState sim_st{bt_core::GoalStatus::RUNNING, bt_core::FailReason::NONE};
-    if (auto check = coupled_sim_->poll(*sim_id); check.status != bt_core::GoalStatus::RUNNING) {
-      sim_st = check;
-    }
-    bt_core::GoalId id{};
-    {
-      std::lock_guard<std::mutex> lock(mu_);
-      id = next_id_++;
-      GoalRecord rec;
-      rec.kind = kind;
-      rec.sim_goal_id = *sim_id;
-      rec.status = sim_st.status;
-      rec.reason = sim_st.reason;
-      goals_[id] = rec;
-    }
-    return id;
   }
 
   bt_core::GoalId id{};
@@ -201,19 +176,21 @@ std::optional<bt_core::GoalId> RosNavBackend::send(bt_core::GoalKind kind, bt_co
     } else if (code == rclcpp_action::ResultCode::CANCELED) {
       it->second.status = bt_core::GoalStatus::CANCELED;
       if (kind == bt_core::GoalKind::FollowLane) {
+        follow_cancel_event_seq_ = ++action_event_seq_;
         dock_goal_after_follow_cancel_ = true;
       }
     } else {
       it->second.status = bt_core::GoalStatus::FAILED;
     }
-    if (kind == bt_core::GoalKind::NavigateToPose && dock_goal_after_follow_cancel_) {
-      ++follow_canceled_before_dock_;
-      dock_goal_after_follow_cancel_ = false;
-    }
   };
 
   switch (kind) {
     case bt_core::GoalKind::NavigateToPose: {
+      if (args.nav_role == bt_core::NavPoseRole::Dock && dock_goal_after_follow_cancel_) {
+        dock_nav_send_event_seq_ = ++action_event_seq_;
+        ++follow_canceled_before_dock_;
+        dock_goal_after_follow_cancel_ = false;
+      }
       NavigateToPose::Goal goal;
       goal.pose = makePose(args.target_x, args.target_y);
       rclcpp_action::Client<NavigateToPose>::SendGoalOptions opts;
@@ -351,17 +328,6 @@ bt_core::GoalState RosNavBackend::poll(bt_core::GoalId id) {
     return {bt_core::GoalStatus::FAILED, bt_core::FailReason::NONE};
   }
   GoalRecord& rec = it->second;
-  if (coupled_sim_ && rec.sim_goal_id != 0) {
-    auto sim_st = coupled_sim_->poll(rec.sim_goal_id);
-    rec.status = sim_st.status;
-    rec.reason = sim_st.reason;
-    if (rec.kind == bt_core::GoalKind::NavigateToPose && sim_st.status == bt_core::GoalStatus::SUCCEEDED &&
-        dock_goal_after_follow_cancel_) {
-      ++follow_canceled_before_dock_;
-      dock_goal_after_follow_cancel_ = false;
-    }
-    return sim_st;
-  }
   if (rec.status == bt_core::GoalStatus::RUNNING) {
     if (rec.nav_handle) {
       rec.status = statusFromHandle(rec.nav_handle);
@@ -382,8 +348,11 @@ void RosNavBackend::cancel(bt_core::GoalId id) {
     local_sim_->cancel(id);
     return;
   }
+  rclcpp_action::ClientGoalHandle<NavigateToPose>::SharedPtr nav_h;
+  rclcpp_action::ClientGoalHandle<FollowPath>::SharedPtr follow_h;
+  rclcpp_action::ClientGoalHandle<BackUp>::SharedPtr backup_h;
+  rclcpp_action::ClientGoalHandle<Wait>::SharedPtr wait_h;
   bool cancel_follow{false};
-  bt_core::GoalId sim_gid{0};
   {
     std::lock_guard<std::mutex> lock(mu_);
     auto it = goals_.find(id);
@@ -391,17 +360,22 @@ void RosNavBackend::cancel(bt_core::GoalId id) {
       return;
     }
     cancel_follow = it->second.kind == bt_core::GoalKind::FollowLane;
-    sim_gid = it->second.sim_goal_id;
-  }
-  if (coupled_sim_ && sim_gid != 0) {
-  coupled_sim_->cancel(sim_gid);
-    if (cancel_follow) {
-      dock_goal_after_follow_cancel_ = true;
-    }
-    return;
+    nav_h = it->second.nav_handle;
+    follow_h = it->second.follow_handle;
+    backup_h = it->second.backup_handle;
+    wait_h = it->second.wait_handle;
   }
   if (cancel_follow) {
-    follow_client_->async_cancel_all_goals();
+    dock_goal_after_follow_cancel_ = true;
+  }
+  if (nav_h) {
+    nav_client_->async_cancel_goal(nav_h);
+  } else if (follow_h) {
+    follow_client_->async_cancel_goal(follow_h);
+  } else if (backup_h) {
+    backup_client_->async_cancel_goal(backup_h);
+  } else if (wait_h) {
+    wait_client_->async_cancel_goal(wait_h);
   }
 }
 
@@ -419,10 +393,11 @@ void RosNavBackend::clearCostmap() {
 
 bt_core::WorldSample RosNavBackend::snapshot() const {
   if (local_sim_) {
-    return local_sim_->snapshot();
-  }
-  if (coupled_sim_) {
-    return coupled_sim_->snapshot();
+    auto s = local_sim_->snapshot();
+    s.collisions = local_sim_->collisions();
+    s.goal_overlap = local_sim_->goalOverlap();
+    s.min_battery = local_sim_->minBattery();
+    return s;
   }
   if (tick_sample_valid_) {
     return tick_sample_;
@@ -442,6 +417,9 @@ bt_core::WorldSample RosNavBackend::snapshot() const {
   last_remote_sample_.docked = res->docked;
   last_remote_sample_.brushes = res->brushes;
   last_remote_sample_.cov_pct = {res->cov_pct[0], res->cov_pct[1], res->cov_pct[2]};
+  last_remote_sample_.collisions = res->collisions;
+  last_remote_sample_.goal_overlap = res->goal_overlap;
+  last_remote_sample_.min_battery = res->min_battery;
   remote_tick_ = res->tick;
   has_remote_sample_ = true;
   tick_sample_ = last_remote_sample_;
@@ -454,13 +432,12 @@ void RosNavBackend::step() {
     local_sim_->step();
     return;
   }
-  if (coupled_sim_) {
-    if (auto mock = mock_peer_.lock()) {
-      mock->stepSimPublic();
-      ++remote_step_count_;
-      tick_sample_valid_ = false;
-      return;
-    }
+  if (auto mock = mock_peer_.lock()) {
+    mock->stepSimPublic();
+    remote_tick_ = mock->sim()->tick();
+    ++remote_step_count_;
+    tick_sample_valid_ = false;
+    return;
   }
   if (!step_client_->wait_for_service(std::chrono::milliseconds(500))) {
     return;
@@ -485,18 +462,12 @@ int RosNavBackend::tick() const {
   if (local_sim_) {
     return local_sim_->tick();
   }
-  if (coupled_sim_) {
-    return coupled_sim_->tick();
-  }
   return remote_tick_;
 }
 
 double RosNavBackend::simTimeSec() const {
   if (local_sim_) {
     return local_sim_->simTimeSec();
-  }
-  if (coupled_sim_) {
-    return coupled_sim_->simTimeSec();
   }
   return tick() * bt_core::MissionParams::DT_SEC;
 }
@@ -515,8 +486,8 @@ bool RosNavBackend::isStuckCondition() const {
   if (local_sim_) {
     return local_sim_->isStuckCondition();
   }
-  if (coupled_sim_) {
-    return coupled_sim_->isStuckCondition();
+  if (auto mock = mock_peer_.lock()) {
+    return mock->sim()->isStuckCondition();
   }
   return false;
 }
@@ -530,21 +501,18 @@ bool RosNavBackend::remoteActionServersReadyAfterSpin() {
   return remoteActionServersReady();
 }
 
-void RosNavBackend::waitForRemoteReady(std::chrono::milliseconds timeout) {
+bool RosNavBackend::waitForRemoteReady(std::chrono::milliseconds timeout) {
   if (local_sim_) {
-    return;
+    return true;
   }
-  const bool coupled_ready = coupled_sim_ && static_cast<bool>(mock_peer_.lock());
   const auto deadline = std::chrono::steady_clock::now() + timeout;
   while (rclcpp::ok() && std::chrono::steady_clock::now() < deadline) {
-    const bool services = coupled_ready
-                              ? true
-                              : step_client_->wait_for_service(std::chrono::milliseconds(0)) &&
-                                    sample_client_->wait_for_service(std::chrono::milliseconds(0));
+    const bool services = step_client_->wait_for_service(std::chrono::milliseconds(0)) &&
+                          sample_client_->wait_for_service(std::chrono::milliseconds(0));
     const bool actions = remoteActionServersReadyAfterSpin() &&
-                         (coupled_ready || clear_client_->wait_for_service(std::chrono::milliseconds(0)));
+                         clear_client_->wait_for_service(std::chrono::milliseconds(0));
     if (services && actions) {
-      return;
+      return true;
     }
     if (!spin_callbacks_on_node_thread_) {
       for (int i = 0; i < 32; ++i) {
@@ -553,6 +521,17 @@ void RosNavBackend::waitForRemoteReady(std::chrono::milliseconds timeout) {
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
   }
+  return step_client_->wait_for_service(std::chrono::milliseconds(0)) &&
+         sample_client_->wait_for_service(std::chrono::milliseconds(0)) &&
+         remoteActionServersReady() &&
+         clear_client_->wait_for_service(std::chrono::milliseconds(0));
+}
+
+bool RosNavBackend::followPathCanceledBeforeDockOrdered() const {
+  if (!follow_cancel_event_seq_ || !dock_nav_send_event_seq_) {
+    return false;
+  }
+  return *follow_cancel_event_seq_ < *dock_nav_send_event_seq_;
 }
 
 }  // namespace nav2_bt_mission

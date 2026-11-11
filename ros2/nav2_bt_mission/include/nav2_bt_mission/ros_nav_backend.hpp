@@ -47,8 +47,9 @@ class RosNavBackend : public bt_core::NavBackend {
 
   int followPathCanceledBeforeDockCount() const { return follow_canceled_before_dock_; }
   int remoteStepCount() const { return remote_step_count_; }
+  bool followPathCanceledBeforeDockOrdered() const;
 
-  void waitForRemoteReady(std::chrono::milliseconds timeout = std::chrono::seconds(60));
+  bool waitForRemoteReady(std::chrono::milliseconds timeout = std::chrono::seconds(60));
 
   bool remoteActionServersReady() const;
   bool remoteActionServersReadyAfterSpin();
@@ -61,7 +62,6 @@ class RosNavBackend : public bt_core::NavBackend {
   void setSpinExecutor(rclcpp::Executor* executor) { spin_executor_ = executor; }
 
   void setMockPeer(const std::shared_ptr<MockNav2>& mock);
-  void setCoupledSim(std::shared_ptr<bt_core::GridSim> sim);
 
   bool usesLocalSim() const { return static_cast<bool>(local_sim_); }
 
@@ -112,7 +112,9 @@ class RosNavBackend : public bt_core::NavBackend {
   mutable bt_core::WorldSample tick_sample_{};
   rclcpp::Executor* spin_executor_{nullptr};
   std::weak_ptr<MockNav2> mock_peer_;
-  std::shared_ptr<bt_core::GridSim> coupled_sim_;
+  std::uint64_t action_event_seq_{0};
+  std::optional<std::uint64_t> follow_cancel_event_seq_;
+  std::optional<std::uint64_t> dock_nav_send_event_seq_;
 };
 
 }  // namespace nav2_bt_mission

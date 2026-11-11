@@ -34,12 +34,10 @@ int main(int argc, char** argv) {
   bt_core::setFrozenWorldScenario(sid);
   nav2_bt_mission::RosNavBackend backend(node, nullptr);
   backend.setSpinExecutor(&exec);
-  for (int i = 0; i < 12000; ++i) {
-    exec.spin_some();
-    if (backend.remoteActionServersReadyAfterSpin()) {
-      break;
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  if (!backend.waitForRemoteReady()) {
+    std::cerr << "mock Nav2 servers not ready; exiting\n";
+    rclcpp::shutdown();
+    return 1;
   }
 
   std::string pkg_share = ament_index_cpp::get_package_share_directory("nav2_bt_mission");

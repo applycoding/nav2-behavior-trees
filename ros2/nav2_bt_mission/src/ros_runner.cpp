@@ -23,8 +23,9 @@ bt_core::RunMetrics runMissionRos(bt_core::ScenarioId scenario, const std::strin
     backend.setSpinExecutor(opts.executor);
   }
   bt_core::setFrozenWorldScenario(scenario);
-  if (!opts.skip_remote_ready) {
-    backend.waitForRemoteReady();
+  if (!opts.skip_remote_ready && !backend.waitForRemoteReady()) {
+    metrics.success = false;
+    return metrics;
   }
   bt_core::RunMetrics metrics;
   metrics.scenario = bt_core::scenarioName(scenario);
@@ -108,12 +109,14 @@ bt_core::RunMetrics runMissionRos(bt_core::ScenarioId scenario, const std::strin
   metrics.halted_follow_lane = state.metrics().halted_follow_lane;
   metrics.follow_lane_halt_tick = state.metrics().follow_lane_halt_tick;
   metrics.next_goal_after_halt_kind = state.metrics().next_goal_after_halt_kind;
+  metrics.next_goal_after_halt_role = state.metrics().next_goal_after_halt_role;
   metrics.navigate_to_zone_attempts_zone_c = state.metrics().navigate_to_zone_attempts_zone_c;
   metrics.recovery_count = state.metrics().recovery_count;
   metrics.follow_lane_starts_b3 = state.metrics().follow_lane_starts_b3;
   metrics.dock_count = state.metrics().dock_count;
-  metrics.collisions = 0;
-  metrics.goal_overlap = 0;
+  metrics.collisions = final_sample.collisions;
+  metrics.goal_overlap = final_sample.goal_overlap;
+  metrics.min_battery = final_sample.min_battery;
   metrics.ended_docked = final_sample.docked;
   metrics.cov_pct = final_sample.cov_pct;
   (void)logger;

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Arpan Bom
 
+import { enrichTraceHeader } from "./enrich";
 import type { LoadedTrace, TickSample, TickTransition, TraceHeader } from "./types";
 
 export function parseTraceJsonl(text: string): LoadedTrace {
@@ -8,7 +9,7 @@ export function parseTraceJsonl(text: string): LoadedTrace {
   if (lines.length === 0) {
     throw new Error("empty trace");
   }
-  const header = JSON.parse(lines[0]) as TraceHeader;
+  const header = enrichTraceHeader(JSON.parse(lines[0]) as TraceHeader);
   const samples = new Map<number, TickSample>();
   const transitions: TickTransition[] = [];
   let maxTick = 0;

@@ -147,8 +147,10 @@ if(BUILD_TESTING)
 
   ament_add_gtest(test_readelf_no_v3 test/test_readelf_no_v3.cpp)
   target_compile_definitions(test_readelf_no_v3 PRIVATE
-    "BT_MISSION_NODE_PATH=\"$<TARGET_FILE:bt_mission_node>\"")
-  add_dependencies(test_readelf_no_v3 bt_mission_node)
+    "BT_MISSION_NODE_PATH=\"$<TARGET_FILE:bt_mission_node>\""
+    "BT_MISSION_STACK_PATH=\"$<TARGET_FILE:bt_mission_stack>\""
+    "MOCK_NAV2_SERVERS_PATH=\"$<TARGET_FILE:mock_nav2_servers>\"")
+  add_dependencies(test_readelf_no_v3 bt_mission_node bt_mission_stack mock_nav2_servers)
 
   find_package(launch_testing_ament_cmake REQUIRED)
   add_launch_test(test/test_launch_nominal.py)

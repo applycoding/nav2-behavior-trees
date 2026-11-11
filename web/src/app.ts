@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Arpan Bom
 
-import { drawBatteryGauge, drawMapScene } from "./canvas/draw";
+import { drawBatteryGauge, drawMapScene, formatRobotCell } from "./canvas/draw";
+import { nodeDepth } from "./trace/enrich";
 import {
   activeLeaf,
   buildReplayIndex,
@@ -87,8 +88,13 @@ export class ViewerApp {
       li.id = `node-${node.uid}`;
       li.dataset.testid = `node-${node.uid}`;
       li.dataset.uid = String(node.uid);
+      if (node.parent !== undefined) {
+        li.dataset.parent = String(node.parent);
+      }
       li.dataset.status = "IDLE";
       li.className = "status-idle";
+      const depth = nodeDepth(this.trace.header.nodes, node.uid);
+      li.style.paddingLeft = `${depth * 12}px`;
       const swatch = document.createElement("span");
       swatch.className = "swatch";
       const label = document.createElement("span");
@@ -112,8 +118,8 @@ export class ViewerApp {
     const leaf = activeLeaf(status, this.trace.nodesByUid);
 
     this.readoutTick.textContent = String(clamped);
-    this.readoutBattery.textContent = sample ? sample.battery.toFixed(3) : ", ";
-    this.readoutLeaf.textContent = leaf ? leaf.type : ", ";
+    this.readoutBattery.textContent = sample ? sample.battery.toFixed(3) : "none";
+    this.readoutLeaf.textContent = leaf ? leaf.type : "none";
     if (sample) {
       this.readoutCov.textContent = sample.cov.map((c) => c.toFixed(1)).join(" / ");
     }
@@ -126,7 +132,8 @@ export class ViewerApp {
       li.className = statusClass[st];
     }
 
-    drawMapScene(this.mapCtx, sample, this.trace.header.map.dock);
+    drawMapScene(this.mapCtx, sample, this.trace.header.map.dock, this.trace.header.lanes ?? []);
+    this.mapCanvas.dataset.robotCell = formatRobotCell(sample);
     drawBatteryGauge(this.batteryCtx, sample?.battery ?? 0);
   }
 

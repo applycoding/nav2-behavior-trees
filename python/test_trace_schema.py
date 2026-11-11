@@ -116,5 +116,24 @@ def test_rejects_sample_missing_battery(tmp_path: pathlib.Path) -> None:
         validate_samples(samples, bad)
 
 
+ALL_SCENARIOS = frozenset(
+    {
+        "nominal",
+        "low_battery",
+        "critical_battery",
+        "blocked_corridor",
+        "phantom_obstacle",
+        "stuck",
+        "unreachable_zone",
+        "lane_obstacle",
+        "lane_blocked_perm",
+    }
+)
+
+
 def test_discover_at_least_one_trace() -> None:
-    assert discover_traces(), "no trace.jsonl found under traces/ci or traces/web_gen"
+    paths = discover_traces()
+    assert paths, "no trace.jsonl found under traces/ci or traces/web_gen"
+    found = {p.parent.name for p in paths if p.parent.is_dir()}
+    missing = ALL_SCENARIOS - found
+    assert not missing, f"missing scenarios in traces/ci or traces/web_gen: {sorted(missing)}"

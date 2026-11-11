@@ -2,7 +2,7 @@
 
 Apache-2.0. Author: Arpan Bom.
 
-**Simulation only.** This repository demonstrates a BehaviorTree.CPP v4 mission executive for a *cleaning robot in a deterministic grid world*. It is a portfolio artefact: no real robots, no production cleaning, and no employment or certification claims. Resume after charging is **lane-level** (interrupted `FollowLane` goals restart the same lane from its start; finished lanes are not repeated).
+**Simulation only.** This repository is an original implementation of a behavior-tree mission executive, inspired by the sources listed in `REFERENCES.md`. **BehaviorTree.CPP 4.11.0** is a third-party library; this project uses its public C++ API only (FetchContent at configure time). It demonstrates a reactive mission for a *cleaning robot in a deterministic grid world*. No real robots, no production cleaning, and no employment or certification claims. Resume after charging is **lane-level** (interrupted `FollowLane` goals restart the same lane from its start; finished lanes are not repeated).
 
 Sibling repos: [`ros2-nav2-slam-sim`](https://github.com/applycoding/ros2-nav2-slam-sim) (Python waypoint FSM), [`nav2-coverage-planner-compare`](https://github.com/applycoding/nav2-coverage-planner-compare) (planner bake-off). This tree shows reactive pre-emption, docking, and negative mutant evidence.
 
@@ -10,7 +10,7 @@ Sibling repos: [`ros2-nav2-slam-sim`](https://github.com/applycoding/ros2-nav2-s
 
 ## Why a separate process from Nav2
 
-Humble `nav2_bt_navigator` links **BehaviorTree.CPP v3** (`behaviortree_cpp_v3`). This project uses **v4** (same `BT` namespace). A single process must not link both; the mission node is a **BT.CPP v4 client** of Nav2 actions (`nav2_msgs` only). CI covers `GridSim`; optional ROS 2 Humble tests use mock action servers.
+Humble `nav2_bt_navigator` links **BehaviorTree.CPP v3** (`behaviortree_cpp_v3`). This project uses **v4** (same `BT` namespace). A single process must not link both; the mission node is a **BT.CPP v4 client** of Nav2 actions (`nav2_msgs` only). ROS CI runs `mock_nav2_servers` and `bt_mission_node` as separate processes: goals round-trip through `rclcpp_action` to mock NavigateToPose, FollowPath, BackUp, and Wait servers backed by one `GridSim`. In-process gtests cover cancel ordering (`RosCriticalStack.CancelBeforeDock`), stuck and critical gates, and a launch test that starts both executables and checks `success=1` and `lanes=19` on nominal.
 
 ## Mission tree (excerpt)
 
@@ -51,7 +51,7 @@ Full tree: `trees/mission.xml`. Models: `trees/models.xml`.
 | `lane_obstacle` | 0 skipped lanes, ≥1 recovery wait | 322.8 |
 | `lane_blocked_perm` | 1 skipped lane, 18 lanes, cov B ≥90% | 341.2 |
 
-See `PLAN.md` §8 for full thresholds. Timing differs slightly from the throwaway prototype; see `DEVIATIONS.md`.
+See `PLAN.md` §8 for full thresholds. Timing is above the throwaway prototype band; see `DEVIATIONS.md`. Golden trace and `metrics.json` hashes in `traces/golden.sha256` are recorded for **g++-13 / libstdc++ on ubuntu-24.04**. A **clang / libc++** build yields different trace bytes for all nine scenarios.
 
 ## Mutants (must fail named gates)
 
@@ -71,7 +71,7 @@ See `PLAN.md` §8 for full thresholds. Timing differs slightly from the throwawa
 | 2 XML / registry | `Registry.*`, banned-node grep |
 | 3-11 Scenarios | `Scenarios.*` gtests |
 | 12 Invariants | `expectGlobalInvariants` in scenario tests |
-| 13 Determinism | `Determinism.TraceBytesMatchAcrossRuns` |
+| 13 Determinism | `Determinism.*` (trace + metrics bytes) |
 | 14-18 Mutants | `Mutants.*`, `MutantBuild.*` |
 | 19 ROS | `ros.yml` → `colcon test` + readelf |
 | 20 Schema | `python/test_trace_schema.py` |
@@ -90,6 +90,6 @@ ctest --test-dir build --output-on-failure
 
 **Viewer:** `cd web && npm ci && npm run copy-traces && npm test && npm run build`
 
-**ROS 2 (optional):** build with `colcon` inside pinned `ros:humble-ros-base-jammy` (see `ros.yml`). In-process gtests and the nominal launch test drive `RosNavBackend` against mock Nav2 action servers (no local `GridSim` shortcut). Manual Gazebo TB3: `ros2/nav2_bt_mission/launch/nav2_tb3_manual.launch.py` (documented, not CI).
+**ROS 2 (optional):** build with `colcon` inside pinned `ros:humble-ros-base-jammy` (see `ros.yml`). Start `mock_nav2_servers`, then `bt_mission_node` or run `colcon test` for in-process action round trips and the nominal launch test. Manual Gazebo TB3: `ros2/nav2_bt_mission/launch/nav2_tb3_manual.launch.py` (documented, not CI).
 
 Planning sources: `PLAN.md`, `TASKS.md`. Deviations: `DEVIATIONS.md`.

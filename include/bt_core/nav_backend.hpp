@@ -24,12 +24,16 @@ enum class GoalStatus { RUNNING, SUCCEEDED, FAILED, CANCELED };
 
 enum class FailReason { NONE, NO_PATH, BLOCKED, STUCK };
 
+// Role for NavigateToPose goals (zone sweep vs return-to-dock).
+enum class NavPoseRole : std::int8_t { None = 0, Dock = 1, Zone = 2 };
+
 struct GoalArgs {
   double target_x{0};
   double target_y{0};
   int lane_zone{-1};
   int lane_index{-1};
   double wait_sec{0};
+  NavPoseRole nav_role{NavPoseRole::None};
 };
 
 using GoalId = std::uint64_t;
@@ -46,6 +50,9 @@ struct WorldSample {
   bool docked{false};
   bool brushes{false};
   std::vector<double> cov_pct;  // per zone A,B,C
+  int collisions{0};
+  int goal_overlap{0};
+  double min_battery{100};
 };
 
 class NavBackend {

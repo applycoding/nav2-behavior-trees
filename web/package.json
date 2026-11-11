@@ -5,13 +5,14 @@
   "type": "module",
   "scripts": {
     "copy-traces": "node scripts/copy-traces.mjs",
+    "write-report": "node scripts/write-report.mjs",
     "dev": "vite",
     "build": "tsc --noEmit -p tsconfig.json && vite build",
     "typecheck": "tsc --noEmit -p tsconfig.tools.json",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "node scripts/write-report.mjs && playwright test"
   },
   "devDependencies": {
     "@playwright/test": "1.65.0",

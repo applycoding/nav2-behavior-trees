@@ -104,6 +104,9 @@ RunResult runMission(ScenarioId scenario, const std::string& tree_xml_path,
   if (result.metrics.next_goal_after_halt_kind < 0) {
     result.metrics.next_goal_after_halt_kind = sim.nextGoalAfterHaltKind();
   }
+  if (result.metrics.next_goal_after_halt_role == 0) {
+    result.metrics.next_goal_after_halt_role = sim.nextGoalAfterHaltRole();
+  }
   result.metrics.ended_docked = final_sample.docked;
   result.metrics.cov_pct = final_sample.cov_pct;
   if (write_trace) tracer.writeMetrics(out_dir + "/metrics.json", result.metrics);

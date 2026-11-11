@@ -279,15 +279,17 @@ class NavigateToDock : public GoalAction {
     GoalArgs a;
     a.target_x = static_cast<double>(world.dockCellX()) + 0.5;
     a.target_y = static_cast<double>(world.dockCellY()) + 0.5;
+    a.nav_role = NavPoseRole::Dock;
     auto id = ctx_.backend.send(GoalKind::NavigateToPose, a);
     if (!id) return BT::NodeStatus::FAILURE;
     gid_ = *id;
     if (auto* live = dynamic_cast<GridSim*>(&ctx_.backend)) {
-      live->onGoalSent(GoalKind::NavigateToPose);
+      live->onGoalSent(GoalKind::NavigateToPose, NavPoseRole::Dock);
     }
     auto& met = ctx_.state.metrics();
     if (met.follow_lane_halt_tick >= 0 && met.next_goal_after_halt_kind < 0) {
       met.next_goal_after_halt_kind = static_cast<int>(GoalKind::NavigateToPose);
+      met.next_goal_after_halt_role = static_cast<int>(NavPoseRole::Dock);
     }
     ctx_.state.metrics().dock_count++;
     return BT::NodeStatus::RUNNING;
@@ -310,11 +312,12 @@ class NavigateToZone : public GoalAction {
     GoalArgs a;
     a.target_x = lane.start_x;
     a.target_y = lane.start_y;
+    a.nav_role = NavPoseRole::Zone;
     auto id = ctx.backend.send(GoalKind::NavigateToPose, a);
     if (!id) return BT::NodeStatus::FAILURE;
     gid_ = *id;
     if (auto* live = dynamic_cast<GridSim*>(&ctx.backend)) {
-      live->onGoalSent(GoalKind::NavigateToPose);
+      live->onGoalSent(GoalKind::NavigateToPose, NavPoseRole::Zone);
       live->recordNavigateToZoneAttempt(z);
     }
     if (z == 2) ++ctx.state.metrics().navigate_to_zone_attempts_zone_c;

@@ -7,6 +7,18 @@ export interface TraceNode {
   uid: number;
   path: string;
   type: string;
+  parent?: number;
+}
+
+export interface TraceLane {
+  zone: number;
+  index: number;
+  row_y: number;
+  start_x: number;
+  start_y: number;
+  end_x: number;
+  end_y: number;
+  reverse: boolean;
 }
 
 export interface TraceHeader {
@@ -15,6 +27,7 @@ export interface TraceHeader {
   dt_ms: number;
   tree_sha256: string;
   nodes: TraceNode[];
+  lanes?: TraceLane[];
   map: { dock: [number, number] };
 }
 

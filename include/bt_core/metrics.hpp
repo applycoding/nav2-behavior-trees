@@ -37,6 +37,7 @@ struct RunMetrics {
   int halted_follow_lane{0};
   int follow_lane_halt_tick{-1};
   int next_goal_after_halt_kind{-1};  // encoded GoalKind
+  int next_goal_after_halt_role{0};   // NavPoseRole when kind is NavigateToPose
 
   int status_changes_max_per_tick{0};
   bool ended_docked{false};

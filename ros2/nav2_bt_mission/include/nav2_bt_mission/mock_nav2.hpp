@@ -31,7 +31,8 @@ class MockNav2 : public rclcpp::Node {
   using BackUp = nav2_msgs::action::BackUp;
   using Wait = nav2_msgs::action::Wait;
 
-  explicit MockNav2(const rclcpp::NodeOptions& options, std::shared_ptr<bt_core::GridSim> sim);
+  explicit MockNav2(const rclcpp::NodeOptions& options, std::shared_ptr<bt_core::GridSim> sim,
+                    bool reject_all_goals = false);
 
   std::shared_ptr<bt_core::GridSim> sim() const { return sim_; }
   void stepSim();
@@ -85,6 +86,7 @@ class MockNav2 : public rclcpp::Node {
   rclcpp::Service<nav2_msgs::srv::ClearEntireCostmap>::SharedPtr clear_srv_;
   rclcpp::Service<nav2_bt_mission::srv::SimStep>::SharedPtr step_srv_;
   rclcpp::Service<nav2_bt_mission::srv::GetWorldSample>::SharedPtr sample_srv_;
+  bool reject_all_goals_{false};
 };
 
 }  // namespace nav2_bt_mission

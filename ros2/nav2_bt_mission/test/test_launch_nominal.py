@@ -11,6 +11,7 @@ from launch import LaunchDescription
 from launch.actions import (
     AppendEnvironmentVariable,
     SetEnvironmentVariable,
+    TimerAction,
 )
 from launch_ros.actions import Node
 from launch_testing.actions import ReadyToTest
@@ -23,9 +24,14 @@ def generate_test_description():
     if os.path.isdir(btcpp_lib):
         extra_env.append(AppendEnvironmentVariable('LD_LIBRARY_PATH', btcpp_lib, separator=':'))
 
+    mock_proc = Node(
+        package='nav2_bt_mission',
+        executable='mock_nav2_servers',
+        output='screen',
+    )
     mission_proc = Node(
         package='nav2_bt_mission',
-        executable='bt_mission_stack',
+        executable='bt_mission_node',
         arguments=['--scenario', 'nominal'],
         output='screen',
     )
@@ -35,10 +41,12 @@ def generate_test_description():
             SetEnvironmentVariable('ROS_AUTOMATIC_DISCOVERY_RANGE', 'LOCALHOST'),
             SetEnvironmentVariable('ROS_LOCALHOST_ONLY', '1'),
             *extra_env,
-            mission_proc,
+            mock_proc,
+            TimerAction(period=2.0, actions=[mission_proc]),
             ReadyToTest(),
         ]),
         {
+            'mock_proc': mock_proc,
             'mission_proc': mission_proc,
         },
     )
@@ -46,17 +54,21 @@ def generate_test_description():
 
 class TestNominalLaunchWait(unittest.TestCase):
 
-    def test_wait_for_mission_shutdown(self, proc_info, mission_proc):
+    def test_wait_for_processes(self, proc_info, mock_proc, mission_proc):
+        proc_info.assertWaitForStartup(process=mock_proc, timeout=60)
         proc_info.assertWaitForStartup(process=mission_proc, timeout=60)
         proc_info.assertWaitForShutdown(process=mission_proc, timeout=1200)
+        proc_info.assertWaitForShutdown(process=mock_proc, timeout=30)
 
 
 @launch_testing.post_shutdown_test()
 class TestNominalProcesses(unittest.TestCase):
 
-    def test_mission_runs(self, proc_info, mission_proc):
+    def test_process_exit_codes(self, proc_info, mock_proc, mission_proc):
         launch_testing.asserts.assertExitCodes(
             proc_info, process=mission_proc, allowable_exit_codes=[0])
+        launch_testing.asserts.assertExitCodes(
+            proc_info, process=mock_proc, allowable_exit_codes=[0])
 
     def test_mission_drove_remote_sim(self, proc_output, mission_proc):
         chunks = proc_output[mission_proc]

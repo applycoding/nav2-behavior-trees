@@ -31,28 +31,25 @@ int main(int argc, char** argv) {
   auto cfg = bt_core::configForScenario(sid);
   auto sim = std::make_shared<bt_core::GridSim>(bt_core::GridSim::makeWorld(cfg));
   auto mock = std::make_shared<nav2_bt_mission::MockNav2>(rclcpp::NodeOptions(), sim);
-  auto backend = std::make_shared<nav2_bt_mission::RosNavBackend>(mock, nullptr);
-  backend->setCoupledSim(sim);
+  auto client = std::make_shared<rclcpp::Node>("bt_mission_stack_client");
+  auto backend = std::make_shared<nav2_bt_mission::RosNavBackend>(client, nullptr);
   backend->setMockPeer(mock);
 
   rclcpp::executors::SingleThreadedExecutor exec;
   backend->setSpinExecutor(&exec);
   exec.add_node(mock);
+  exec.add_node(client);
 
-  for (int i = 0; i < 12000; ++i) {
-    exec.spin_some();
-    if (backend->remoteActionServersReadyAfterSpin()) {
-      break;
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  if (!backend->waitForRemoteReady()) {
+    std::cerr << "mock Nav2 servers not ready; exiting\n";
+    rclcpp::shutdown();
+    return 1;
   }
 
   const std::string tree_xml = std::string(BT_SOURCE_DIR) + "/trees/mission.xml";
   nav2_bt_mission::RosRunOptions opts;
   opts.executor = &exec;
-  opts.skip_remote_ready = true;
-
-  auto metrics = nav2_bt_mission::runMissionRos(sid, tree_xml, *backend, mock, opts);
+  auto metrics = nav2_bt_mission::runMissionRos(sid, tree_xml, *backend, client, opts);
 
   std::cout << "success=" << metrics.success << " t=" << metrics.sim_time_sec << " ticks="
             << metrics.ticks << " lanes=" << metrics.lanes_done << " backup=" << metrics.backup

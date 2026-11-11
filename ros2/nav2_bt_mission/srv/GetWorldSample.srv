@@ -8,3 +8,6 @@ bool docked
 bool brushes
 float64[3] cov_pct
 int32 tick
+int32 collisions
+int32 goal_overlap
+float64 min_battery

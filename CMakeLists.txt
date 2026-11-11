@@ -79,7 +79,9 @@ add_executable(bt_tests
     tests/scenario_gates.cpp)
 target_link_libraries(bt_tests PRIVATE bt_core GTest::gtest_main)
 target_compile_options(bt_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
-target_compile_definitions(bt_tests PRIVATE BT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+target_compile_definitions(bt_tests PRIVATE BT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+    BT_MISSION_EXECUTABLE="$<TARGET_FILE:bt_mission>")
+add_dependencies(bt_tests bt_mission)
 
 include(GoogleTest)
 gtest_discover_tests(bt_tests)
