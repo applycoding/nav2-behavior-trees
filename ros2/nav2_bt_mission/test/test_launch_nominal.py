@@ -62,7 +62,10 @@ class TestNominalProcesses(unittest.TestCase):
         chunks = proc_output[mission_proc]
 
         def as_text(part):
-            return part.text if hasattr(part, 'text') else str(part)
+            raw = part.text if hasattr(part, 'text') else part
+            if isinstance(raw, bytes):
+                return raw.decode('utf-8', errors='replace')
+            return str(raw)
 
         if isinstance(chunks, (list, tuple)):
             output = ''.join(as_text(p) for p in chunks)
