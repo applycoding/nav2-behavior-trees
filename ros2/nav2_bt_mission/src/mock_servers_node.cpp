@@ -3,6 +3,8 @@
 
 #include "nav2_bt_mission/mock_nav2.hpp"
 
+#include "bt_core/frozen_world.hpp"
+
 #include <rclcpp/rclcpp.hpp>
 
 int main(int argc, char** argv) {
@@ -13,7 +15,9 @@ int main(int argc, char** argv) {
       scenario = argv[++i];
     }
   }
-  auto cfg = bt_core::configForScenario(bt_core::scenarioFromName(scenario));
+  auto sid = bt_core::scenarioFromName(scenario);
+  bt_core::setFrozenWorldScenario(sid);
+  auto cfg = bt_core::configForScenario(sid);
   bt_core::GridSim world = bt_core::GridSim::makeWorld(cfg);
   auto sim = std::make_shared<bt_core::GridSim>(std::move(world));
   auto node = std::make_shared<nav2_bt_mission::MockNav2>(rclcpp::NodeOptions(), sim);

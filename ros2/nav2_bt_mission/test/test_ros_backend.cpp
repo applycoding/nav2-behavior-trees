@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Arpan Bom
 
+#include "bt_core/frozen_world.hpp"
 #include "bt_core/scenario_gates.hpp"
 #include "nav2_bt_mission/mock_nav2.hpp"
 #include "nav2_bt_mission/ros_nav_backend.hpp"
@@ -33,16 +34,15 @@ const auto* const kRclEnv = ::testing::AddGlobalTestEnvironment(new RclcppEnviro
 class RosHarness {
  public:
   explicit RosHarness(bt_core::ScenarioId scenario) : scenario_(scenario) {
+    bt_core::setFrozenWorldScenario(scenario);
     auto cfg = bt_core::configForScenario(scenario);
     sim_ = std::make_shared<bt_core::GridSim>(bt_core::GridSim::makeWorld(cfg));
-    rclcpp::NodeOptions intra_opts;
-    intra_opts.use_intra_process_comms(true);
-    mock_ = std::make_shared<nav2_bt_mission::MockNav2>(intra_opts, sim_);
-    client_ =
-        std::make_shared<rclcpp::Node>("ros_test_client_" + bt_core::scenarioName(scenario), intra_opts);
+    mock_ = std::make_shared<nav2_bt_mission::MockNav2>(rclcpp::NodeOptions(), sim_);
+    client_ = std::make_shared<rclcpp::Node>("ros_test_client_" + bt_core::scenarioName(scenario));
     backend_ = std::make_shared<nav2_bt_mission::RosNavBackend>(client_, nullptr);
     backend_->setCoupledSim(sim_);
     backend_->setMockPeer(mock_);
+    backend_->setSpinExecutor(&exec_);
     exec_.add_node(mock_);
     exec_.add_node(client_);
     nav2_bt_mission::RosNavBackend::useNodeSpinThread(false);
@@ -51,7 +51,7 @@ class RosHarness {
     }
     for (int i = 0; i < 12000; ++i) {
       exec_.spin_some();
-      if (backend_->remoteActionServersReady()) {
+      if (backend_->remoteActionServersReadyAfterSpin()) {
         break;
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(5));

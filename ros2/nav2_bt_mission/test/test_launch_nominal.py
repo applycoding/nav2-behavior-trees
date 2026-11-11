@@ -72,3 +72,27 @@ class TestNominalProcesses(unittest.TestCase):
     def test_mission_runs(self, proc_info, mission_proc):
         launch_testing.asserts.assertExitCodes(
             proc_info, process=mission_proc, allowable_exit_codes=[0])
+
+    def test_mission_drove_remote_sim(self, proc_info, mission_proc):
+        output = ''.join(proc_info[mission_proc].output)
+        self.assertRegex(
+            output,
+            r'success=1\b',
+            msg='mission stdout must report success=1 (mock action path)',
+        )
+        steps = 0
+        for line in output.splitlines():
+            m = re.search(r'remote_steps=(\d+)', line)
+            if m:
+                steps = int(m.group(1))
+        self.assertGreater(
+            steps,
+            1000,
+            msg='mission must step the remote mock sim (remote_steps>1000)',
+        )
+        lanes = -1
+        for line in output.splitlines():
+            m = re.search(r'lanes=(\d+)', line)
+            if m:
+                lanes = int(m.group(1))
+        self.assertEqual(lanes, 19, msg='nominal lanes_done must be 19')

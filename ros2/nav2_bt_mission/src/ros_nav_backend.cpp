@@ -474,6 +474,15 @@ bool RosNavBackend::remoteActionServersReady() const {
          charge_client_->wait_for_action_server(std::chrono::milliseconds(0));
 }
 
+bool RosNavBackend::remoteActionServersReadyAfterSpin() {
+  if (!spin_callbacks_on_node_thread_) {
+    for (int i = 0; i < 32; ++i) {
+      spinBackend(node_, spin_executor_);
+    }
+  }
+  return remoteActionServersReady();
+}
+
 void RosNavBackend::waitForRemoteReady(std::chrono::milliseconds timeout) {
   if (local_sim_) {
     return;
@@ -485,7 +494,7 @@ void RosNavBackend::waitForRemoteReady(std::chrono::milliseconds timeout) {
                               ? true
                               : step_client_->wait_for_service(std::chrono::milliseconds(0)) &&
                                     sample_client_->wait_for_service(std::chrono::milliseconds(0));
-    const bool actions = remoteActionServersReady() &&
+    const bool actions = remoteActionServersReadyAfterSpin() &&
                          (coupled_ready || clear_client_->wait_for_service(std::chrono::milliseconds(0)));
     if (services && actions) {
       return;

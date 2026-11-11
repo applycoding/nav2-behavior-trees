@@ -51,6 +51,7 @@ class RosNavBackend : public bt_core::NavBackend {
   void waitForRemoteReady(std::chrono::milliseconds timeout = std::chrono::seconds(60));
 
   bool remoteActionServersReady() const;
+  bool remoteActionServersReadyAfterSpin();
 
   void beginMissionTick();
 

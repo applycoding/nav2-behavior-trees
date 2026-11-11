@@ -5,6 +5,7 @@
 #include "nav2_bt_mission/ros_runner.hpp"
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
+#include <rclcpp/executors/single_threaded_executor.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include "bt_core/frozen_world.hpp"
@@ -26,13 +27,16 @@ int main(int argc, char** argv) {
 
   auto node = std::make_shared<rclcpp::Node>("bt_mission_node");
   nav2_bt_mission::RosNavBackend::useNodeSpinThread(false);
+  rclcpp::executors::SingleThreadedExecutor exec;
+  exec.add_node(node);
 
   auto sid = bt_core::scenarioFromName(scenario);
   bt_core::setFrozenWorldScenario(sid);
   nav2_bt_mission::RosNavBackend backend(node, nullptr);
+  backend.setSpinExecutor(&exec);
   for (int i = 0; i < 12000; ++i) {
-    rclcpp::spin_some(node);
-    if (backend.remoteActionServersReady()) {
+    exec.spin_some();
+    if (backend.remoteActionServersReadyAfterSpin()) {
       break;
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -41,7 +45,9 @@ int main(int argc, char** argv) {
   std::string pkg_share = ament_index_cpp::get_package_share_directory("nav2_bt_mission");
   std::string tree_xml = pkg_share + "/trees/mission.xml";
 
-  auto metrics = nav2_bt_mission::runMissionRos(sid, tree_xml, backend, node, {});
+  nav2_bt_mission::RosRunOptions opts;
+  opts.executor = &exec;
+  auto metrics = nav2_bt_mission::runMissionRos(sid, tree_xml, backend, node, opts);
 
   rclcpp::shutdown();
 
