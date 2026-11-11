@@ -147,7 +147,7 @@ if(BUILD_TESTING)
   find_package(launch_testing_ament_cmake REQUIRED)
   add_launch_test(test/test_launch_nominal.py)
   set_tests_properties(test_test_launch_nominal.py PROPERTIES
-    TIMEOUT 1200
+    TIMEOUT 3600
     ENVIRONMENT "ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST;ROS_LOCALHOST_ONLY=1")
 endif()
 

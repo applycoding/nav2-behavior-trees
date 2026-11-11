@@ -38,13 +38,11 @@ class RosHarness {
     auto cfg = bt_core::configForScenario(scenario);
     sim_ = std::make_shared<bt_core::GridSim>(bt_core::GridSim::makeWorld(cfg));
     mock_ = std::make_shared<nav2_bt_mission::MockNav2>(rclcpp::NodeOptions(), sim_);
-    client_ = std::make_shared<rclcpp::Node>("ros_test_client_" + bt_core::scenarioName(scenario));
-    backend_ = std::make_shared<nav2_bt_mission::RosNavBackend>(client_, nullptr);
+    backend_ = std::make_shared<nav2_bt_mission::RosNavBackend>(mock_, nullptr);
     backend_->setCoupledSim(sim_);
     backend_->setMockPeer(mock_);
     backend_->setSpinExecutor(&exec_);
     exec_.add_node(mock_);
-    exec_.add_node(client_);
     nav2_bt_mission::RosNavBackend::useNodeSpinThread(false);
     for (int i = 0; i < 64; ++i) {
       exec_.spin_some();
@@ -62,7 +60,7 @@ class RosHarness {
     nav2_bt_mission::RosRunOptions opts;
     opts.executor = &exec_;
     opts.skip_remote_ready = true;
-    return nav2_bt_mission::runMissionRos(scenario_, treePath(), *backend_, client_, opts);
+    return nav2_bt_mission::runMissionRos(scenario_, treePath(), *backend_, mock_, opts);
   }
 
   nav2_bt_mission::RosNavBackend& backend() { return *backend_; }
@@ -71,7 +69,6 @@ class RosHarness {
   bt_core::ScenarioId scenario_;
   std::shared_ptr<bt_core::GridSim> sim_;
   std::shared_ptr<nav2_bt_mission::MockNav2> mock_;
-  std::shared_ptr<rclcpp::Node> client_;
   std::shared_ptr<nav2_bt_mission::RosNavBackend> backend_;
   rclcpp::executors::SingleThreadedExecutor exec_;
 };
