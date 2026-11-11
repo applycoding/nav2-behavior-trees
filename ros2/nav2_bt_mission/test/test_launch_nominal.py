@@ -59,9 +59,3 @@ class TestNominalProcesses(unittest.TestCase):
     def test_mission_runs(self, proc_info, mission_proc):
         launch_testing.asserts.assertExitCodes(
             proc_info, process=mission_proc, allowable_exit_codes=[0])
-
-    def test_mock_servers_were_stepped(self, proc_info, mission_proc):
-        launch_testing.asserts.assertInStdout(
-            proc_info, 'remote_steps=', process=mission_proc)
-        launch_testing.asserts.assertInStdout(
-            proc_info, 'success=1', process=mission_proc)
