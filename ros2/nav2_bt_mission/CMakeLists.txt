@@ -138,9 +138,6 @@ if(BUILD_TESTING)
   set_tests_properties(test_ros_backend PROPERTIES
     TIMEOUT 3600
     ENVIRONMENT "ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST;ROS_LOCALHOST_ONLY=1")
-  set_tests_properties(test_test_launch_nominal.py PROPERTIES
-    TIMEOUT 1200
-    ENVIRONMENT "ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST;ROS_LOCALHOST_ONLY=1")
 
   ament_add_gtest(test_readelf_no_v3 test/test_readelf_no_v3.cpp)
   target_compile_definitions(test_readelf_no_v3 PRIVATE
@@ -149,6 +146,9 @@ if(BUILD_TESTING)
 
   find_package(launch_testing_ament_cmake REQUIRED)
   add_launch_test(test/test_launch_nominal.py)
+  set_tests_properties(test_test_launch_nominal.py PROPERTIES
+    TIMEOUT 1200
+    ENVIRONMENT "ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST;ROS_LOCALHOST_ONLY=1")
 endif()
 
 ament_package()
