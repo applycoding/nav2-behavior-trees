@@ -45,8 +45,6 @@ jobs:
       - name: rosdep and build
         run: |
           set -eo pipefail
-          apt-get update
-          apt-get install -y python3-pip
           set +u
           source /opt/ros/humble/setup.bash
           set -u
