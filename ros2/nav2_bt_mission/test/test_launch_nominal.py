@@ -27,13 +27,11 @@ def install_bin(name: str) -> str:
 
 
 def rmw_env() -> dict:
-    cyclone_xml = os.path.join(os.path.dirname(__file__), 'cyclonedds_ci.xml')
     env = {
         'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST',
         'ROS_LOCALHOST_ONLY': '1',
         'ROS_DOMAIN_ID': '0',
         'RMW_IMPLEMENTATION': 'rmw_cyclonedds_cpp',
-        'CYCLONEDDS_URI': f'file://{cyclone_xml}',
     }
     btcpp_lib = '/opt/btcpp-4.11/lib'
     if os.path.isdir(btcpp_lib):
@@ -44,7 +42,6 @@ def rmw_env() -> dict:
 @launch_testing.markers.keep_alive
 def generate_test_description():
     proc_env = rmw_env()
-    cyclone_xml = os.path.join(os.path.dirname(__file__), 'cyclonedds_ci.xml')
 
     mock_proc = ExecuteProcess(
         cmd=[install_bin('mock_nav2_servers')],
@@ -65,7 +62,6 @@ def generate_test_description():
             SetEnvironmentVariable('ROS_LOCALHOST_ONLY', '1'),
             SetEnvironmentVariable('ROS_DOMAIN_ID', '0'),
             SetEnvironmentVariable('RMW_IMPLEMENTATION', 'rmw_cyclonedds_cpp'),
-            SetEnvironmentVariable('CYCLONEDDS_URI', f'file://{cyclone_xml}'),
             *([AppendEnvironmentVariable('LD_LIBRARY_PATH', '/opt/btcpp-4.11/lib', separator=':')]
               if os.path.isdir('/opt/btcpp-4.11/lib') else []),
             mock_proc,
