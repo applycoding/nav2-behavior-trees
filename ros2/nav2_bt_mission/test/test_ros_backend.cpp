@@ -77,20 +77,6 @@ class RosHarness {
 
 }  // namespace
 
-TEST(RosStack, NominalSemanticGates) {
-  RosHarness harness(bt_core::ScenarioId::nominal);
-  auto m = harness.run();
-  EXPECT_TRUE(m.success);
-  for (double c : m.cov_pct) {
-    EXPECT_GE(c, 95.0);
-  }
-  EXPECT_LE(m.sim_time_sec, 400.0);
-  EXPECT_EQ(m.charge_cycles, 0);
-  EXPECT_EQ(m.lanes_done, 19);
-  EXPECT_GT(harness.backend().remoteStepCount(), 0);
-  bt_core::test_gates::expectGlobalInvariants(m);
-}
-
 TEST(RosStack, StuckSemanticGates) {
   RosHarness harness(bt_core::ScenarioId::stuck);
   auto m = harness.run();
@@ -108,5 +94,19 @@ TEST(RosCriticalStack, CancelBeforeDock) {
   EXPECT_TRUE(m.success);
   EXPECT_EQ(m.halted_follow_lane, 1);
   EXPECT_GE(harness.backend().followPathCanceledBeforeDockCount(), 1);
+  bt_core::test_gates::expectGlobalInvariants(m);
+}
+
+TEST(RosStack, NominalSemanticGates) {
+  RosHarness harness(bt_core::ScenarioId::nominal);
+  auto m = harness.run();
+  EXPECT_TRUE(m.success);
+  for (double c : m.cov_pct) {
+    EXPECT_GE(c, 95.0);
+  }
+  EXPECT_LE(m.sim_time_sec, 400.0);
+  EXPECT_EQ(m.charge_cycles, 0);
+  EXPECT_EQ(m.lanes_done, 19);
+  EXPECT_GT(harness.backend().remoteStepCount(), 0);
   bt_core::test_gates::expectGlobalInvariants(m);
 }

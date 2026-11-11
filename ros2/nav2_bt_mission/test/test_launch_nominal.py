@@ -58,8 +58,9 @@ class TestNominalProcesses(unittest.TestCase):
         launch_testing.asserts.assertExitCodes(
             proc_info, process=mission_proc, allowable_exit_codes=[0])
 
-    def test_mission_drove_remote_sim(self, proc_info, mission_proc):
-        output = ''.join(proc_info[mission_proc].output)
+    def test_mission_drove_remote_sim(self, proc_output, mission_proc):
+        io = proc_output[mission_proc]
+        output = (io.stdout or '') + (io.stderr or '')
         self.assertRegex(
             output,
             r'success=1\b',
