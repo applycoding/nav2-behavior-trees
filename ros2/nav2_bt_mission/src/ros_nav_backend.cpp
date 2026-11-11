@@ -330,10 +330,9 @@ bt_core::GoalState RosNavBackend::poll(bt_core::GoalId id) {
   GoalRecord& rec = it->second;
   if (coupled_sim_ && rec.sim_goal_id != 0) {
     auto sim_st = coupled_sim_->poll(rec.sim_goal_id);
-    if (sim_st.status != bt_core::GoalStatus::RUNNING) {
-      rec.status = sim_st.status;
-      rec.reason = sim_st.reason;
-    }
+    rec.status = sim_st.status;
+    rec.reason = sim_st.reason;
+    return sim_st;
   }
   if (rec.status == bt_core::GoalStatus::RUNNING) {
     if (rec.nav_handle) {
