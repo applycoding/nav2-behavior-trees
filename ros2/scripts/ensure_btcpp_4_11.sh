@@ -34,18 +34,16 @@ cmake -S /tmp/btcpp-src -B /tmp/btcpp-build \
   -DBTCPP_SQLITE_LOGGING=OFF \
   -DBTCPP_EXAMPLES=OFF \
   -DBTCPP_BUILD_TOOLS=OFF \
-  -DBTCPP_SHARED_LIBS=OFF \
+  -DBTCPP_SHARED_LIBS=ON \
   -DBUILD_TESTING=OFF
 
 cmake --build /tmp/btcpp-build --parallel
 cmake --install /tmp/btcpp-build
 
-tinyxml_a=/tmp/btcpp-build/3rdparty/tinyxml2/libtinyxml2.a
-if [ ! -f "$tinyxml_a" ]; then
-  echo "Missing vendored tinyxml2 static archive at $tinyxml_a" >&2
+if [ ! -f "$INSTALL_PREFIX/lib/libbehaviortree_cpp.so" ]; then
+  echo "Missing libbehaviortree_cpp.so in $INSTALL_PREFIX/lib" >&2
   exit 1
 fi
-cp "$tinyxml_a" "$INSTALL_PREFIX/lib/libtinyxml2.a"
 
 cfg="$INSTALL_PREFIX/lib/cmake/behaviortree_cpp/behaviortree_cppConfig.cmake"
 if [ ! -f "$cfg" ]; then

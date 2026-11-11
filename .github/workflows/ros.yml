@@ -29,7 +29,8 @@ jobs:
             exit 1
           fi
           if [ -d /opt/btcpp-4.11 ]; then
-            echo "CMAKE_PREFIX_PATH=/opt/btcpp-4.11:${CMAKE_PREFIX_PATH:-}" >> "$GITHUB_ENV"
+            echo "CMAKE_PREFIX_PATH=/opt/btcpp-4.11" >> "$GITHUB_ENV"
+            echo "BTCPP_INSTALL_LIB=/opt/btcpp-4.11/lib" >> "$GITHUB_ENV"
           fi
           apt_ver=$(dpkg-query -W -f='${Version}' ros-humble-behaviortree-cpp 2>/dev/null || true)
           if [ -n "$apt_ver" ] && [[ "$apt_ver" == 4.11.0* ]]; then
@@ -50,6 +51,7 @@ jobs:
           source /opt/ros/humble/setup.bash
           set -u
           cd ros2
+          rm -rf build install log
           rosdep update
           rosdep install --from-paths . --ignore-src -r -y --skip-keys=behaviortree_cpp
           if [ -d /opt/btcpp-4.11 ]; then
