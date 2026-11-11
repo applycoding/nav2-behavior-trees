@@ -18,7 +18,6 @@ namespace nav2_bt_mission {
 bt_core::RunMetrics runMissionRos(bt_core::ScenarioId scenario, const std::string& tree_xml,
                                   RosNavBackend& backend, rclcpp::Node::SharedPtr spin_node,
                                   const RosRunOptions& opts) {
-  (void)spin_node;
   if (opts.executor != nullptr) {
     backend.setSpinExecutor(opts.executor);
   }
@@ -53,7 +52,11 @@ bt_core::RunMetrics runMissionRos(bt_core::ScenarioId scenario, const std::strin
   auto spin_quiet = [&]() {
     for (int pass = 0; pass < 8; ++pass) {
       for (int i = 0; i < 32; ++i) {
-        rclcpp::spin_some(spin_node);
+        if (opts.executor != nullptr) {
+          opts.executor->spin_some();
+        } else if (spin_node) {
+          rclcpp::spin_some(spin_node);
+        }
       }
     }
   };
