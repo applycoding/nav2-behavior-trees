@@ -11,7 +11,6 @@
 
 #include <iostream>
 #include <string>
-#include <thread>
 
 int main(int argc, char** argv) {
   rclcpp::init(argc, argv);
@@ -23,8 +22,7 @@ int main(int argc, char** argv) {
   }
 
   auto node = std::make_shared<rclcpp::Node>("bt_mission_node");
-  nav2_bt_mission::RosNavBackend::useNodeSpinThread(true);
-  std::thread spin_thread([node]() { rclcpp::spin(node); });
+  nav2_bt_mission::RosNavBackend::useNodeSpinThread(false);
 
   auto sid = bt_core::scenarioFromName(scenario);
   nav2_bt_mission::RosNavBackend backend(node, nullptr);
@@ -36,7 +34,6 @@ int main(int argc, char** argv) {
       nav2_bt_mission::runMissionRos(sid, tree_xml, backend, node, {});
 
   rclcpp::shutdown();
-  spin_thread.join();
 
   std::cout << "success=" << metrics.success << " t=" << metrics.sim_time_sec << " ticks="
             << metrics.ticks << " lanes=" << metrics.lanes_done << " backup=" << metrics.backup
