@@ -424,6 +424,7 @@ bt_core::WorldSample RosNavBackend::snapshot() const {
   last_remote_sample_.collisions = res->collisions;
   last_remote_sample_.goal_overlap = res->goal_overlap;
   last_remote_sample_.min_battery = res->min_battery;
+  last_remote_sample_.critical_battery_event_tick = res->critical_battery_event_tick;
   remote_tick_ = res->tick;
   has_remote_sample_ = true;
   tick_sample_ = last_remote_sample_;
@@ -484,6 +485,19 @@ bool RosNavBackend::remoteActionServersReady() const {
          dock_client_->wait_for_action_server(std::chrono::milliseconds(0)) &&
          undock_client_->wait_for_action_server(std::chrono::milliseconds(0)) &&
          charge_client_->wait_for_action_server(std::chrono::milliseconds(0));
+}
+
+int RosNavBackend::criticalBatteryEventTick() const {
+  if (local_sim_) {
+    return local_sim_->criticalBatteryEventTick();
+  }
+  if (auto mock = mock_peer_.lock()) {
+    return mock->sim()->criticalBatteryEventTick();
+  }
+  if (has_remote_sample_) {
+    return last_remote_sample_.critical_battery_event_tick;
+  }
+  return -1;
 }
 
 bool RosNavBackend::isStuckCondition() const {

@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
-  if (!backend.waitForRemoteReady(std::chrono::seconds(180))) {
+  if (!backend.waitForRemoteReady(std::chrono::seconds(240))) {
     std::cerr << "mock Nav2 servers not ready; exiting\n";
     rclcpp::shutdown();
     return 1;

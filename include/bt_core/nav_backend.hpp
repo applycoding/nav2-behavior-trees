@@ -53,6 +53,7 @@ struct WorldSample {
   int collisions{0};
   int goal_overlap{0};
   double min_battery{100};
+  int critical_battery_event_tick{-1};
 };
 
 class NavBackend {

@@ -114,6 +114,9 @@ bt_core::RunMetrics runMissionRos(bt_core::ScenarioId scenario, const std::strin
   metrics.recovery_count = state.metrics().recovery_count;
   metrics.follow_lane_starts_b3 = state.metrics().follow_lane_starts_b3;
   metrics.dock_count = state.metrics().dock_count;
+  metrics.critical_battery_event_tick = state.metrics().critical_battery_event_tick;
+  metrics.critical_battery_event_tick =
+      std::max(metrics.critical_battery_event_tick, backend.criticalBatteryEventTick());
   metrics.collisions = final_sample.collisions;
   metrics.goal_overlap = final_sample.goal_overlap;
   metrics.min_battery = final_sample.min_battery;

@@ -205,12 +205,21 @@ MockNav2::MockNav2(const rclcpp::NodeOptions& options, std::shared_ptr<bt_core::
         response->collisions = sim_->collisions();
         response->goal_overlap = sim_->goalOverlap();
         response->min_battery = sim_->minBattery();
+        response->critical_battery_event_tick = sim_->criticalBatteryEventTick();
       });
 }
 
 bt_core::GoalId MockNav2::registerGoal(const rclcpp_action::GoalUUID& uuid, bt_core::GoalKind kind,
                                        const bt_core::GoalArgs& args) {
-  auto gid = sim_->send(kind, args);
+  auto send_once = [&]() { return sim_->send(kind, args); };
+  auto gid = send_once();
+  if (!gid) {
+    for (const auto& entry : uuid_to_gid_) {
+      sim_->cancel(entry.second);
+    }
+    uuid_to_gid_.clear();
+    gid = send_once();
+  }
   if (!gid) {
     return 0;
   }

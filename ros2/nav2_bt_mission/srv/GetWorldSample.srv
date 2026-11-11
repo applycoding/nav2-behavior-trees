@@ -11,3 +11,4 @@ int32 tick
 int32 collisions
 int32 goal_overlap
 float64 min_battery
+int32 critical_battery_event_tick

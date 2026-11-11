@@ -67,6 +67,8 @@ class RosNavBackend : public bt_core::NavBackend {
 
   bool isStuckCondition() const override;
 
+  int criticalBatteryEventTick() const;
+
  private:
   struct GoalRecord {
     bt_core::GoalKind kind{bt_core::GoalKind::Wait};
