@@ -27,7 +27,7 @@ jobs:
           set -euo pipefail
           chmod +x ros2/scripts/ensure_btcpp_4_11.sh
           apt-get update
-          apt-get install -y git libssl-dev ros-humble-rmw-cyclonedds-cpp
+          apt-get install -y git libssl-dev ros-humble-rmw-cyclonedds-cpp fastdds-tools
           if ! ros2/scripts/ensure_btcpp_4_11.sh; then
             exit 1
           fi

@@ -21,21 +21,11 @@ from launch.event_handlers import OnProcessExit
 from launch_testing.actions import ReadyToTest
 
 DISCOVERY_SERVER = '127.0.0.1:11811'
-DISCOVERY_BIN_CANDIDATES = (
-    '/opt/ros/humble/lib/rmw_fastrtps_cpp/fastdds_discovery_server',
-)
 
 
 def install_bin(name: str) -> str:
     prefix = get_package_prefix('nav2_bt_mission')
     return os.path.join(prefix, 'lib', 'nav2_bt_mission', name)
-
-
-def discovery_server_bin() -> str:
-    for path in DISCOVERY_BIN_CANDIDATES:
-        if os.path.isfile(path):
-            return path
-    return DISCOVERY_BIN_CANDIDATES[0]
 
 
 def rmw_env() -> dict:
@@ -57,7 +47,7 @@ def generate_test_description():
     proc_env = rmw_env()
 
     discovery_proc = ExecuteProcess(
-        cmd=[discovery_server_bin(), '-i', '0'],
+        cmd=['fastdds', 'discovery', '-i', '0'],
         output='screen',
         additional_env=proc_env,
         name='fastdds_discovery_server',

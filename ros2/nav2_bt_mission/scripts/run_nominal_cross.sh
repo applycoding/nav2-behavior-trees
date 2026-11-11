@@ -31,9 +31,8 @@ on_exit() {
 }
 trap on_exit EXIT
 
-DISCOVERY_BIN="/opt/ros/humble/lib/rmw_fastrtps_cpp/fastdds_discovery_server"
-if [[ -x "$DISCOVERY_BIN" ]]; then
-  "$DISCOVERY_BIN" -i 0 &
+if command -v fastdds >/dev/null 2>&1; then
+  fastdds discovery -i 0 &
   disc_pid=$!
   sleep 2
 fi
