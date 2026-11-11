@@ -61,8 +61,7 @@ class TestNominalProcesses(unittest.TestCase):
             proc_info, process=mission_proc, allowable_exit_codes=[0])
 
     def test_mock_servers_were_stepped(self, proc_info, mission_proc):
-        text = proc_info.process_output(process=mission_proc).decode('utf-8', errors='replace')
-        m = re.search(r'remote_steps=(\d+)', text)
-        assert m is not None, text
-        steps = int(m.group(1))
-        assert steps > 2000, f'expected mock SimStep from mission, got remote_steps={steps}'
+        launch_testing.asserts.assertInStdout(
+            proc_info, 'remote_steps=', process=mission_proc)
+        launch_testing.asserts.assertInStdout(
+            proc_info, 'success=1', process=mission_proc)

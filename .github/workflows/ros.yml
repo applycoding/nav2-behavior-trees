@@ -56,6 +56,9 @@ jobs:
             skip_bt="--skip-keys=behaviortree_cpp"
           fi
           rosdep install --from-paths . --ignore-src -r -y $skip_bt
+          if [ -d /opt/btcpp-4.11 ]; then
+            export LD_LIBRARY_PATH=/opt/btcpp-4.11/lib:${LD_LIBRARY_PATH:-}
+          fi
           colcon build --packages-select nav2_bt_mission --cmake-args \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH:-}" \

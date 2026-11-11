@@ -17,12 +17,20 @@ namespace {
 
 std::string treePath() { return std::string(BT_SOURCE_DIR) + "/trees/mission.xml"; }
 
-class RosHarness {
+class RclcppEnvironment : public ::testing::Environment {
  public:
-  explicit RosHarness(bt_core::ScenarioId scenario) : scenario_(scenario) {
+  void SetUp() override {
     if (!rclcpp::ok()) {
       rclcpp::init(0, nullptr);
     }
+  }
+};
+
+const auto* const kRclEnv = ::testing::AddGlobalTestEnvironment(new RclcppEnvironment);
+
+class RosHarness {
+ public:
+  explicit RosHarness(bt_core::ScenarioId scenario) : scenario_(scenario) {
     auto cfg = bt_core::configForScenario(scenario);
     sim_ = std::make_shared<bt_core::GridSim>(bt_core::GridSim::makeWorld(cfg));
     rclcpp::NodeOptions opts;
@@ -66,7 +74,6 @@ TEST(RosStack, NominalSemanticGates) {
   EXPECT_EQ(m.lanes_done, 19);
   EXPECT_GT(harness.backend().remoteStepCount(), 0);
   bt_core::test_gates::expectGlobalInvariants(m);
-  rclcpp::shutdown();
 }
 
 TEST(RosStack, StuckSemanticGates) {
@@ -78,7 +85,6 @@ TEST(RosStack, StuckSemanticGates) {
     EXPECT_GE(c, 95.0);
   }
   bt_core::test_gates::expectGlobalInvariants(m);
-  rclcpp::shutdown();
 }
 
 TEST(RosCriticalStack, CancelBeforeDock) {
@@ -88,5 +94,4 @@ TEST(RosCriticalStack, CancelBeforeDock) {
   EXPECT_EQ(m.halted_follow_lane, 1);
   EXPECT_GE(harness.backend().followPathCanceledBeforeDockCount(), 1);
   bt_core::test_gates::expectGlobalInvariants(m);
-  rclcpp::shutdown();
 }
