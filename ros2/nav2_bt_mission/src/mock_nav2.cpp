@@ -128,12 +128,10 @@ MockNav2::MockNav2(const rclcpp::NodeOptions& options, std::shared_ptr<bt_core::
         backup_exec_.push_back({handle, it->second});
       });
 
-  dock_node_ = std::make_shared<rclcpp::Node>("mock_dock");
-
-  auto make_wait_on = [this](rclcpp::Node* host, const std::string& name, bt_core::GoalKind kind,
+  auto make_wait_on = [this](const std::string& name, bt_core::GoalKind kind,
                              rclcpp_action::Server<Wait>::SharedPtr& slot) {
     slot = rclcpp_action::create_server<Wait>(
-        host, name,
+        this, name,
         [this, kind, name](const rclcpp_action::GoalUUID& uuid, std::shared_ptr<const Wait::Goal> goal) {
           if (reject_all_goals_) {
             return rclcpp_action::GoalResponse::REJECT;
@@ -169,10 +167,10 @@ MockNav2::MockNav2(const rclcpp::NodeOptions& options, std::shared_ptr<bt_core::
         });
   };
 
-  make_wait_on(this, "wait", bt_core::GoalKind::Wait, wait_server_);
-  make_wait_on(dock_node_.get(), "dock", bt_core::GoalKind::Dock, dock_server_);
-  make_wait_on(dock_node_.get(), "undock", bt_core::GoalKind::Undock, undock_server_);
-  make_wait_on(dock_node_.get(), "charge", bt_core::GoalKind::Charge, charge_server_);
+  make_wait_on("wait", bt_core::GoalKind::Wait, wait_server_);
+  make_wait_on("dock", bt_core::GoalKind::Dock, dock_server_);
+  make_wait_on("undock", bt_core::GoalKind::Undock, undock_server_);
+  make_wait_on("charge", bt_core::GoalKind::Charge, charge_server_);
 
   clear_srv_ = create_service<nav2_msgs::srv::ClearEntireCostmap>(
       kGlobalCostmapClear,

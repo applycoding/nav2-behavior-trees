@@ -35,7 +35,6 @@ class MockNav2 : public rclcpp::Node {
                     bool reject_all_goals = false);
 
   std::shared_ptr<bt_core::GridSim> sim() const { return sim_; }
-  rclcpp::Node::SharedPtr dockNode() const { return dock_node_; }
   void stepSim();
 
   void stepSimPublic() { stepSim(); }
@@ -88,7 +87,6 @@ class MockNav2 : public rclcpp::Node {
   rclcpp::Service<nav2_bt_mission::srv::SimStep>::SharedPtr step_srv_;
   rclcpp::Service<nav2_bt_mission::srv::GetWorldSample>::SharedPtr sample_srv_;
   bool reject_all_goals_{false};
-  rclcpp::Node::SharedPtr dock_node_;
 };
 
 }  // namespace nav2_bt_mission

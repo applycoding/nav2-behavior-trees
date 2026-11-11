@@ -40,9 +40,10 @@ def generate_test_description():
         LaunchDescription([
             SetEnvironmentVariable('ROS_AUTOMATIC_DISCOVERY_RANGE', 'LOCALHOST'),
             SetEnvironmentVariable('ROS_LOCALHOST_ONLY', '1'),
+            SetEnvironmentVariable('ROS_DOMAIN_ID', '0'),
             *extra_env,
             mock_proc,
-            TimerAction(period=5.0, actions=[mission_proc]),
+            TimerAction(period=8.0, actions=[mission_proc]),
             ReadyToTest(),
         ]),
         {

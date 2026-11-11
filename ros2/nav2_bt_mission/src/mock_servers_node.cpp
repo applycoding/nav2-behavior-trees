@@ -5,7 +5,6 @@
 
 #include "bt_core/frozen_world.hpp"
 
-#include <rclcpp/executors/single_threaded_executor.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 int main(int argc, char** argv) {
@@ -22,10 +21,7 @@ int main(int argc, char** argv) {
   bt_core::GridSim world = bt_core::GridSim::makeWorld(cfg);
   auto sim = std::make_shared<bt_core::GridSim>(std::move(world));
   auto node = std::make_shared<nav2_bt_mission::MockNav2>(rclcpp::NodeOptions(), sim);
-  rclcpp::executors::SingleThreadedExecutor exec;
-  exec.add_node(node);
-  exec.add_node(node->dockNode());
-  exec.spin();
+  rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;
 }

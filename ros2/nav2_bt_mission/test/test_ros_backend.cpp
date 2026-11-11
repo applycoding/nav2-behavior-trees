@@ -47,17 +47,18 @@ class RosHarness {
     backend_->setMockPeer(mock_);
     backend_->setSpinExecutor(&exec_);
     exec_.add_node(mock_);
-    exec_.add_node(mock_->dockNode());
     exec_.add_node(client_);
     nav2_bt_mission::RosNavBackend::useNodeSpinThread(false);
-    for (int i = 0; i < 12000; ++i) {
+    bool ready = false;
+    for (int i = 0; i < 60000; ++i) {
       exec_.spin_some();
-      if (backend_->remoteActionServersReadyAfterSpin() && backend_->waitForRemoteReady()) {
+      if (backend_->remoteActionServersReady()) {
+        ready = true;
         break;
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(5));
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
-    if (!backend_->waitForRemoteReady()) {
+    if (!ready) {
       throw std::runtime_error("mock Nav2 action servers not ready (hard failure)");
     }
   }
