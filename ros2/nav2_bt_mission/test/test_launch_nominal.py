@@ -7,40 +7,50 @@ import unittest
 
 import launch_testing
 import launch_testing.markers
+from ament_index_python.packages import get_package_prefix
 from launch import LaunchDescription
 from launch.actions import (
     AppendEnvironmentVariable,
+    ExecuteProcess,
     RegisterEventHandler,
     SetEnvironmentVariable,
     Shutdown,
     TimerAction,
 )
 from launch.event_handlers import OnProcessExit
-from launch_ros.actions import Node
 from launch_testing.actions import ReadyToTest
+
+
+def install_bin(name: str) -> str:
+    prefix = get_package_prefix('nav2_bt_mission')
+    return os.path.join(prefix, 'lib', 'nav2_bt_mission', name)
 
 
 @launch_testing.markers.keep_alive
 def generate_test_description():
     fastdds_xml = os.path.join(os.path.dirname(__file__), 'fastdds_ci.xml')
-    extra_env = [
-        SetEnvironmentVariable('RMW_IMPLEMENTATION', 'rmw_fastrtps_cpp'),
-        SetEnvironmentVariable('FASTRTPS_DEFAULT_PROFILES_FILE', fastdds_xml),
-    ]
+    proc_env = {
+        'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST',
+        'ROS_LOCALHOST_ONLY': '1',
+        'ROS_DOMAIN_ID': '0',
+        'RMW_IMPLEMENTATION': 'rmw_fastrtps_cpp',
+        'FASTRTPS_DEFAULT_PROFILES_FILE': fastdds_xml,
+    }
     btcpp_lib = '/opt/btcpp-4.11/lib'
     if os.path.isdir(btcpp_lib):
-        extra_env.append(AppendEnvironmentVariable('LD_LIBRARY_PATH', btcpp_lib, separator=':'))
+        proc_env['LD_LIBRARY_PATH'] = btcpp_lib + os.pathsep + os.environ.get('LD_LIBRARY_PATH', '')
 
-    mock_proc = Node(
-        package='nav2_bt_mission',
-        executable='mock_nav2_servers',
+    mock_proc = ExecuteProcess(
+        cmd=[install_bin('mock_nav2_servers')],
         output='screen',
+        additional_env=proc_env,
+        name='mock_nav2_servers',
     )
-    mission_proc = Node(
-        package='nav2_bt_mission',
-        executable='bt_mission_node',
-        arguments=['--scenario', 'nominal'],
+    mission_proc = ExecuteProcess(
+        cmd=[install_bin('bt_mission_node'), '--scenario', 'nominal'],
         output='screen',
+        additional_env=proc_env,
+        name='bt_mission_node',
     )
 
     return (
@@ -48,7 +58,10 @@ def generate_test_description():
             SetEnvironmentVariable('ROS_AUTOMATIC_DISCOVERY_RANGE', 'LOCALHOST'),
             SetEnvironmentVariable('ROS_LOCALHOST_ONLY', '1'),
             SetEnvironmentVariable('ROS_DOMAIN_ID', '0'),
-            *extra_env,
+            SetEnvironmentVariable('RMW_IMPLEMENTATION', 'rmw_fastrtps_cpp'),
+            SetEnvironmentVariable('FASTRTPS_DEFAULT_PROFILES_FILE', fastdds_xml),
+            *([AppendEnvironmentVariable('LD_LIBRARY_PATH', btcpp_lib, separator=':')]
+              if os.path.isdir(btcpp_lib) else []),
             mock_proc,
             TimerAction(period=15.0, actions=[mission_proc]),
             RegisterEventHandler(OnProcessExit(target_action=mission_proc, on_exit=[Shutdown()])),
