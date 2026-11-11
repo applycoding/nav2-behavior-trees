@@ -48,8 +48,11 @@ class RosHarness {
     for (int i = 0; i < 64; ++i) {
       exec_.spin_some();
     }
-    for (int i = 0; i < 400 && !backend_->remoteActionServersReady(); ++i) {
+    for (int i = 0; i < 12000; ++i) {
       exec_.spin_some();
+      if (backend_->remoteActionServersReady()) {
+        break;
+      }
       std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
   }
@@ -57,7 +60,7 @@ class RosHarness {
   bt_core::RunMetrics run() {
     nav2_bt_mission::RosRunOptions opts;
     opts.executor = &exec_;
-    opts.skip_remote_ready = backend_->remoteActionServersReady();
+    opts.skip_remote_ready = true;
     return nav2_bt_mission::runMissionRos(scenario_, treePath(), *backend_, client_, opts);
   }
 

@@ -10,8 +10,10 @@
 #include "bt_core/frozen_world.hpp"
 #include "bt_core/grid_sim.hpp"
 
+#include <chrono>
 #include <iostream>
 #include <string>
+#include <thread>
 
 int main(int argc, char** argv) {
   rclcpp::init(argc, argv);
@@ -28,6 +30,13 @@ int main(int argc, char** argv) {
   auto sid = bt_core::scenarioFromName(scenario);
   bt_core::setFrozenWorldScenario(sid);
   nav2_bt_mission::RosNavBackend backend(node, nullptr);
+  for (int i = 0; i < 12000; ++i) {
+    rclcpp::spin_some(node);
+    if (backend.remoteActionServersReady()) {
+      break;
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  }
 
   std::string pkg_share = ament_index_cpp::get_package_share_directory("nav2_bt_mission");
   std::string tree_xml = pkg_share + "/trees/mission.xml";
