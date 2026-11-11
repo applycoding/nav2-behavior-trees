@@ -511,6 +511,16 @@ bool RosNavBackend::remoteActionServersReady() const {
          charge_client_->wait_for_action_server(std::chrono::milliseconds(0));
 }
 
+bool RosNavBackend::isStuckCondition() const {
+  if (local_sim_) {
+    return local_sim_->isStuckCondition();
+  }
+  if (coupled_sim_) {
+    return coupled_sim_->isStuckCondition();
+  }
+  return false;
+}
+
 bool RosNavBackend::remoteActionServersReadyAfterSpin() {
   if (!spin_callbacks_on_node_thread_) {
     for (int i = 0; i < 32; ++i) {

@@ -66,9 +66,7 @@ class IsStuck : public BT::ConditionNode, CtxMixin {
   IsStuck(const std::string& n, const BT::NodeConfig& c, CtxRef ctx) : BT::ConditionNode(n, c), CtxMixin(ctx) {}
   static BT::PortsList providedPorts() { return {}; }
   BT::NodeStatus tick() override {
-    auto& ctx = ctx_;
-    const GridSim& world = worldRef(ctx.backend);
-    return world.isStuckCondition() ? BT::NodeStatus::SUCCESS : BT::NodeStatus::FAILURE;
+    return ctx_.backend.isStuckCondition() ? BT::NodeStatus::SUCCESS : BT::NodeStatus::FAILURE;
   }
 };
 

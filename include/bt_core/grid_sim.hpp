@@ -99,7 +99,7 @@ class GridSim : public NavBackend {
   int criticalBatteryEventTick() const { return critical_battery_event_tick_; }
   int nextGoalAfterHaltKind() const { return next_goal_after_halt_kind_; }
 
-  bool isStuckCondition() const { return last_fail_reason_ == FailReason::STUCK; }
+  bool isStuckCondition() const override { return last_fail_reason_ == FailReason::STUCK; }
 
   void recordHaltedFollowLane(int at_tick);
   void recordLaneAdvanced();

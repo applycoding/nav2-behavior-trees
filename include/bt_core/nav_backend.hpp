@@ -61,6 +61,8 @@ class NavBackend {
 
   virtual int tick() const = 0;
   virtual double simTimeSec() const = 0;
+
+  virtual bool isStuckCondition() const { return false; }
 };
 
 }  // namespace bt_core

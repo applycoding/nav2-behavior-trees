@@ -65,6 +65,8 @@ class RosNavBackend : public bt_core::NavBackend {
 
   bool usesLocalSim() const { return static_cast<bool>(local_sim_); }
 
+  bool isStuckCondition() const override;
+
  private:
   struct GoalRecord {
     bt_core::GoalKind kind{bt_core::GoalKind::Wait};

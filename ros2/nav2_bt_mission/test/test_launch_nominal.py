@@ -60,7 +60,7 @@ class TestNominalProcesses(unittest.TestCase):
 
     def test_mission_drove_remote_sim(self, proc_output, mission_proc):
         io = proc_output[mission_proc]
-        output = (io.stdout or '') + (io.stderr or '')
+        output = ''.join(io.stdout or []) + ''.join(io.stderr or [])
         self.assertRegex(
             output,
             r'success=1\b',
