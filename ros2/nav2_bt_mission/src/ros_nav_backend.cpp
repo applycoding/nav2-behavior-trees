@@ -72,6 +72,20 @@ void spinBackend(const rclcpp::Node::SharedPtr& node, rclcpp::Executor* exec) {
   }
 }
 
+template <typename ActionT>
+bool acceptActionGoal(
+    const rclcpp::Node::SharedPtr& node, rclcpp::Executor* exec,
+    const typename rclcpp_action::Client<ActionT>::SharedPtr& client, const typename ActionT::Goal& goal,
+    const rclcpp_action::Client<ActionT>::SendGoalOptions& opts,
+    typename rclcpp_action::ClientGoalHandle<ActionT>::SharedPtr& out) {
+  auto future = client->async_send_goal(goal, opts);
+  if (!waitWithSpin(future, node, exec, std::chrono::seconds(10))) {
+    return false;
+  }
+  out = future.get();
+  return static_cast<bool>(out);
+}
+
 }  // namespace
 
 void RosNavBackend::setMockPeer(const std::shared_ptr<MockNav2>& mock) { mock_peer_ = mock; }
@@ -145,25 +159,6 @@ std::optional<bt_core::GoalId> RosNavBackend::send(bt_core::GoalKind kind, bt_co
     }
   };
 
-  const auto accept_goal =
-      [this, mark_failed]<typename ActionT>(
-          const typename rclcpp_action::Client<ActionT>::SharedPtr& client,
-          const typename ActionT::Goal& goal,
-          const rclcpp_action::Client<ActionT>::SendGoalOptions& opts,
-          typename rclcpp_action::ClientGoalHandle<ActionT>::SharedPtr& out) -> bool {
-    auto future = client->async_send_goal(goal, opts);
-    if (!waitWithSpin(future, node_, spin_executor_, std::chrono::seconds(10))) {
-      mark_failed();
-      return false;
-    }
-    out = future.get();
-    if (!out) {
-      mark_failed();
-      return false;
-    }
-    return true;
-  };
-
   switch (kind) {
     case bt_core::GoalKind::NavigateToPose: {
       NavigateToPose::Goal goal;
@@ -171,7 +166,8 @@ std::optional<bt_core::GoalId> RosNavBackend::send(bt_core::GoalKind kind, bt_co
       rclcpp_action::Client<NavigateToPose>::SendGoalOptions opts;
       opts.result_callback = [result_cb](const auto& wrapped) { result_cb(wrapped.code); };
       rclcpp_action::ClientGoalHandle<NavigateToPose>::SharedPtr handle;
-      if (!accept_goal<NavigateToPose>(nav_client_, goal, opts, handle)) {
+      if (!acceptActionGoal<NavigateToPose>(node_, spin_executor_, nav_client_, goal, opts, handle)) {
+        mark_failed();
         return std::nullopt;
       }
       std::lock_guard<std::mutex> lock(mu_);
@@ -186,7 +182,8 @@ std::optional<bt_core::GoalId> RosNavBackend::send(bt_core::GoalKind kind, bt_co
       rclcpp_action::Client<FollowPath>::SendGoalOptions opts;
       opts.result_callback = [result_cb](const auto& wrapped) { result_cb(wrapped.code); };
       rclcpp_action::ClientGoalHandle<FollowPath>::SharedPtr handle;
-      if (!accept_goal<FollowPath>(follow_client_, goal, opts, handle)) {
+      if (!acceptActionGoal<FollowPath>(node_, spin_executor_, follow_client_, goal, opts, handle)) {
+        mark_failed();
         return std::nullopt;
       }
       std::lock_guard<std::mutex> lock(mu_);
@@ -199,7 +196,8 @@ std::optional<bt_core::GoalId> RosNavBackend::send(bt_core::GoalKind kind, bt_co
       rclcpp_action::Client<BackUp>::SendGoalOptions opts;
       opts.result_callback = [result_cb](const auto& wrapped) { result_cb(wrapped.code); };
       rclcpp_action::ClientGoalHandle<BackUp>::SharedPtr handle;
-      if (!accept_goal<BackUp>(backup_client_, goal, opts, handle)) {
+      if (!acceptActionGoal<BackUp>(node_, spin_executor_, backup_client_, goal, opts, handle)) {
+        mark_failed();
         return std::nullopt;
       }
       std::lock_guard<std::mutex> lock(mu_);
@@ -212,7 +210,8 @@ std::optional<bt_core::GoalId> RosNavBackend::send(bt_core::GoalKind kind, bt_co
       rclcpp_action::Client<Wait>::SendGoalOptions opts;
       opts.result_callback = [result_cb](const auto& wrapped) { result_cb(wrapped.code); };
       rclcpp_action::ClientGoalHandle<Wait>::SharedPtr handle;
-      if (!accept_goal<Wait>(wait_client_, goal, opts, handle)) {
+      if (!acceptActionGoal<Wait>(node_, spin_executor_, wait_client_, goal, opts, handle)) {
+        mark_failed();
         return std::nullopt;
       }
       std::lock_guard<std::mutex> lock(mu_);
@@ -223,7 +222,8 @@ std::optional<bt_core::GoalId> RosNavBackend::send(bt_core::GoalKind kind, bt_co
       rclcpp_action::Client<Wait>::SendGoalOptions opts;
       opts.result_callback = [result_cb](const auto& wrapped) { result_cb(wrapped.code); };
       rclcpp_action::ClientGoalHandle<Wait>::SharedPtr handle;
-      if (!accept_goal<Wait>(dock_client_, Wait::Goal{}, opts, handle)) {
+      if (!acceptActionGoal<Wait>(node_, spin_executor_, dock_client_, Wait::Goal{}, opts, handle)) {
+        mark_failed();
         return std::nullopt;
       }
       std::lock_guard<std::mutex> lock(mu_);
@@ -234,7 +234,8 @@ std::optional<bt_core::GoalId> RosNavBackend::send(bt_core::GoalKind kind, bt_co
       rclcpp_action::Client<Wait>::SendGoalOptions opts;
       opts.result_callback = [result_cb](const auto& wrapped) { result_cb(wrapped.code); };
       rclcpp_action::ClientGoalHandle<Wait>::SharedPtr handle;
-      if (!accept_goal<Wait>(undock_client_, Wait::Goal{}, opts, handle)) {
+      if (!acceptActionGoal<Wait>(node_, spin_executor_, undock_client_, Wait::Goal{}, opts, handle)) {
+        mark_failed();
         return std::nullopt;
       }
       std::lock_guard<std::mutex> lock(mu_);
@@ -245,7 +246,8 @@ std::optional<bt_core::GoalId> RosNavBackend::send(bt_core::GoalKind kind, bt_co
       rclcpp_action::Client<Wait>::SendGoalOptions opts;
       opts.result_callback = [result_cb](const auto& wrapped) { result_cb(wrapped.code); };
       rclcpp_action::ClientGoalHandle<Wait>::SharedPtr handle;
-      if (!accept_goal<Wait>(charge_client_, Wait::Goal{}, opts, handle)) {
+      if (!acceptActionGoal<Wait>(node_, spin_executor_, charge_client_, Wait::Goal{}, opts, handle)) {
+        mark_failed();
         return std::nullopt;
       }
       std::lock_guard<std::mutex> lock(mu_);
