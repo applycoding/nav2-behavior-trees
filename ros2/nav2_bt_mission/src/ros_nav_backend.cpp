@@ -78,8 +78,11 @@ bool acceptActionGoal(
     const typename rclcpp_action::Client<ActionT>::SharedPtr& client, const typename ActionT::Goal& goal,
     const typename rclcpp_action::Client<ActionT>::SendGoalOptions& opts,
     typename rclcpp_action::ClientGoalHandle<ActionT>::SharedPtr& out) {
+  (void)exec;
   auto future = client->async_send_goal(goal, opts);
-  if (!waitWithSpin(future, node, exec, std::chrono::seconds(10))) {
+  const auto rc =
+      rclcpp::spin_until_future_complete(node, future, std::chrono::seconds(30));
+  if (rc != rclcpp::FutureReturnCode::SUCCESS) {
     return false;
   }
   out = future.get();
