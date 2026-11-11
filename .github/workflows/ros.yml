@@ -64,5 +64,9 @@ jobs:
             -DCMAKE_FIND_PACKAGE_PREFER_CONFIG=ON
           set +u
           source install/setup.bash
+          set -u
+          if [ -d /opt/btcpp-4.11/lib ]; then
+            export LD_LIBRARY_PATH=/opt/btcpp-4.11/lib:${LD_LIBRARY_PATH:-}
+          fi
           colcon test --packages-select nav2_bt_mission --event-handlers console_direct+
           colcon test-result --verbose

@@ -114,6 +114,10 @@ if(BUILD_TESTING)
   nav2_bt_set_rpath(test_ros_backend)
   target_compile_definitions(test_ros_backend PRIVATE BT_SOURCE_DIR="${BT_REPO_ROOT}")
   set_tests_properties(test_ros_backend PROPERTIES TIMEOUT 3600)
+  if(BTCPP_RPATH)
+    set_tests_properties(test_ros_backend PROPERTIES
+      ENVIRONMENT "LD_LIBRARY_PATH=${BTCPP_RPATH}:$ENV{LD_LIBRARY_PATH}")
+  endif()
 
   ament_add_gtest(test_readelf_no_v3 test/test_readelf_no_v3.cpp)
   target_compile_definitions(test_readelf_no_v3 PRIVATE

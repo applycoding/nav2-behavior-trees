@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Arpan Bom
 
+import os
 import re
 import unittest
 
@@ -15,6 +16,15 @@ from launch_testing.actions import ReadyToTest
 
 @launch_testing.markers.keep_alive
 def generate_test_description():
+    ld_paths = []
+    btcpp_lib = '/opt/btcpp-4.11/lib'
+    if os.path.isdir(btcpp_lib):
+        ld_paths.append(btcpp_lib)
+    existing = os.environ.get('LD_LIBRARY_PATH', '')
+    if existing:
+        ld_paths.append(existing)
+    ld_env = ':'.join(ld_paths)
+
     mock_proc = Node(
         package='nav2_bt_mission',
         executable='mock_nav2_servers',
@@ -32,6 +42,7 @@ def generate_test_description():
         LaunchDescription([
             SetEnvironmentVariable('ROS_AUTOMATIC_DISCOVERY_RANGE', 'LOCALHOST'),
             SetEnvironmentVariable('ROS_LOCALHOST_ONLY', '1'),
+            SetEnvironmentVariable('LD_LIBRARY_PATH', ld_env),
             mock_proc,
             TimerAction(period=10.0, actions=[mission_proc]),
             RegisterEventHandler(
