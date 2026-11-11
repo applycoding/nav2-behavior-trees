@@ -28,6 +28,7 @@ MockNav2::MockNav2(const rclcpp::NodeOptions& options, std::shared_ptr<bt_core::
         args.target_y = goal->pose.pose.position.y;
         bt_core::GoalId gid = registerGoal(uuid, bt_core::GoalKind::NavigateToPose, args);
         if (gid == 0) {
+          RCLCPP_ERROR(get_logger(), "reject NavigateToPose goal (sim busy or failed to start)");
           return rclcpp_action::GoalResponse::REJECT;
         }
         return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
@@ -126,6 +127,7 @@ MockNav2::MockNav2(const rclcpp::NodeOptions& options, std::shared_ptr<bt_core::
           }
           bt_core::GoalId gid = registerGoal(uuid, kind, args);
           if (gid == 0) {
+            RCLCPP_ERROR(get_logger(), "reject %s goal (sim busy or failed to start)", name.c_str());
             return rclcpp_action::GoalResponse::REJECT;
           }
           return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
