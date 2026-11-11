@@ -11,6 +11,7 @@
 
 #include <behaviortree_cpp/bt_factory.h>
 
+#include <algorithm>
 #include <fstream>
 #include <thread>
 
