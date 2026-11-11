@@ -126,7 +126,15 @@ jobs:
           npm ci
           npm run typecheck
           npm test
-          npx playwright install --with-deps chromium
+          for attempt in 1 2 3 4 5; do
+            if npx playwright install --with-deps chromium; then
+              break
+            fi
+            if [ "$attempt" -eq 5 ]; then
+              exit 1
+            fi
+            sleep $((attempt * 30))
+          done
           npm run build
           npm run test:e2e
 
