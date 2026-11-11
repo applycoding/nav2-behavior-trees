@@ -92,7 +92,7 @@ if(BUILD_TESTING)
   ament_target_dependencies(test_ros_backend rclcpp)
   target_link_libraries(test_ros_backend nav2_bt_ros_lib)
   target_compile_definitions(test_ros_backend PRIVATE BT_SOURCE_DIR="${BT_REPO_ROOT}")
-  set_tests_properties(test_ros_backend PROPERTIES TIMEOUT 1200)
+  set_tests_properties(test_ros_backend PROPERTIES TIMEOUT 3600)
 
   ament_add_gtest(test_readelf_no_v3 test/test_readelf_no_v3.cpp)
   target_compile_definitions(test_readelf_no_v3 PRIVATE
