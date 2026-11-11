@@ -118,7 +118,7 @@ MockNav2::MockNav2(const rclcpp::NodeOptions& options, std::shared_ptr<bt_core::
                           rclcpp_action::Server<Wait>::SharedPtr& slot) {
     slot = rclcpp_action::create_server<Wait>(
         this, name,
-        [this, kind](const rclcpp_action::GoalUUID& uuid, std::shared_ptr<const Wait::Goal> goal) {
+        [this, kind, name](const rclcpp_action::GoalUUID& uuid, std::shared_ptr<const Wait::Goal> goal) {
           std::lock_guard<std::mutex> lock(sim_mu_);
           bt_core::GoalArgs args{};
           if (kind == bt_core::GoalKind::Wait) {
