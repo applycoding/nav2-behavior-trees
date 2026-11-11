@@ -16,7 +16,6 @@ namespace nav2_bt_mission {
 
 namespace {
 bool spin_callbacks_on_node_thread_{false};
-}  // namespace
 
 template <typename FutureT>
 bool waitForFuture(FutureT& fut, std::chrono::milliseconds timeout) {
