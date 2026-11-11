@@ -15,9 +15,15 @@ fi
 echo "Apt BT.CPP not 4.11.0 (got: ${apt_ver:-none}); building FetchContent pin $BT_TAG"
 
 if [ ! -d /tmp/btcpp-src ]; then
-  git clone --depth 1 https://github.com/BehaviorTree/BehaviorTree.CPP.git /tmp/btcpp-src
-  git -C /tmp/btcpp-src fetch --depth 1 origin "$BT_TAG"
-  git -C /tmp/btcpp-src checkout "$BT_TAG"
+  git clone https://github.com/BehaviorTree/BehaviorTree.CPP.git /tmp/btcpp-src
+fi
+git -C /tmp/btcpp-src fetch --depth 1 origin "$BT_TAG"
+git -C /tmp/btcpp-src checkout "$BT_TAG"
+
+built_head=$(git -C /tmp/btcpp-src rev-parse HEAD)
+if [ "$built_head" != "$BT_TAG" ]; then
+  echo "BT.CPP checkout is $built_head, expected $BT_TAG" >&2
+  exit 1
 fi
 
 cmake -S /tmp/btcpp-src -B /tmp/btcpp-build \
@@ -32,15 +38,16 @@ cmake -S /tmp/btcpp-src -B /tmp/btcpp-build \
 cmake --build /tmp/btcpp-build --parallel
 cmake --install /tmp/btcpp-build
 
-ver=$("$INSTALL_PREFIX/bin/btcpp_version" 2>/dev/null | head -1 || true)
-if [ -z "$ver" ]; then
-  ver=$(grep -E '^[0-9]+\.[0-9]+\.[0-9]+' "$INSTALL_PREFIX/include/behaviortree_cpp/bt_version.h" | head -1 || true)
-fi
-echo "Installed BT.CPP: $ver at $INSTALL_PREFIX"
-
-if [[ "$ver" != 4.11.0* ]]; then
-  echo "BehaviorTree.CPP version is not 4.11.0: $ver" >&2
+cfg="$INSTALL_PREFIX/lib/cmake/behaviortree_cpp/behaviortree_cppConfig.cmake"
+if [ ! -f "$cfg" ]; then
+  echo "Missing installed cmake config at $cfg" >&2
   exit 1
 fi
 
-echo "FetchContent install ready at $INSTALL_PREFIX"
+if ! grep -q '4\.11\.0' "$cfg"; then
+  echo "behaviortree_cppConfig.cmake does not mention 4.11.0" >&2
+  exit 1
+fi
+
+echo "FetchContent install ready at $INSTALL_PREFIX (commit $built_head)"
+echo "CI using FetchContent install at $INSTALL_PREFIX"
