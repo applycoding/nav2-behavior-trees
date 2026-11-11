@@ -27,7 +27,7 @@ jobs:
           set -euo pipefail
           chmod +x ros2/scripts/ensure_btcpp_4_11.sh
           apt-get update
-          apt-get install -y git libssl-dev
+          apt-get install -y git libssl-dev ros-humble-rmw-cyclonedds-cpp
           if ! ros2/scripts/ensure_btcpp_4_11.sh; then
             exit 1
           fi
@@ -71,6 +71,7 @@ jobs:
           fi
           export ROS_LOCALHOST_ONLY=1
           export ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
-          export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+          export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+          export FASTRTPS_DEFAULT_PROFILES_FILE="$GITHUB_WORKSPACE/ros2/nav2_bt_mission/test/fastdds_ci.xml"
           colcon test --packages-select nav2_bt_mission --event-handlers console_direct+
           colcon test-result --verbose
