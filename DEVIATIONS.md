@@ -33,3 +33,11 @@ Prototype runtimes (PLAN section 9) and this build on `GridSim` with g++-13 on u
 **Measured:** with `RosNavBackend` talking to remote mock servers, `dynamic_cast<GridSim*>` is null on the client.
 
 **Change:** `worldRef(NavBackend&)` returns the live `GridSim` when present, otherwise a process-static `frozenWorld()` built from the nominal `GridSimConfig`. Mission nodes use this for lane and dock coordinates only; simulation state still comes from `NavBackend::snapshot()` and mock-driven `GridSim` stepping.
+
+## Cross-process nominal launch in GitHub Actions
+
+**PLAN criterion 19 / F1:** `test_launch_nominal.py` starts `mock_nav2_servers` and `bt_mission_node` as separate OS processes and asserts `success=1` and `lanes=19`.
+
+**Measured:** in the `ros:humble-ros-base-jammy` CI container, `bt_mission_node` exits with `actions=0` after the remote-ready wait even with `ROS_LOCALHOST_ONLY=1`, Fast DDS UDP profile, and a 15 s mock lead time. In-process ROS gtests on the same image pass (real `rclcpp_action` round trips, cancel-before-dock ordering, reject-all-goals failure).
+
+**Status:** `colcon test` still runs the launch file; cross-process discovery in this environment is under investigation. Real action semantics for nominal, stuck, and critical_battery are covered by `test_ros_backend` and `readelf` on the same workflow. Manual two-process runs on a desktop Humble install should work when DDS sees localhost peers.

@@ -10,7 +10,7 @@ Sibling repos: [`ros2-nav2-slam-sim`](https://github.com/applycoding/ros2-nav2-s
 
 ## Why a separate process from Nav2
 
-Humble `nav2_bt_navigator` links **BehaviorTree.CPP v3** (`behaviortree_cpp_v3`). This project uses **v4** (same `BT` namespace). A single process must not link both; the mission node is a **BT.CPP v4 client** of Nav2 actions (`nav2_msgs` only). ROS CI runs `mock_nav2_servers` and `bt_mission_node` as separate processes: goals round-trip through `rclcpp_action` to mock NavigateToPose, FollowPath, BackUp, and Wait servers backed by one `GridSim`. In-process gtests cover cancel ordering (`RosCriticalStack.CancelBeforeDock`), stuck and critical gates, and a launch test that starts both executables and checks `success=1` and `lanes=19` on nominal.
+Humble `nav2_bt_navigator` links **BehaviorTree.CPP v3** (`behaviortree_cpp_v3`). This project uses **v4** (same `BT` namespace). A single process must not link both; the mission node is a **BT.CPP v4 client** of Nav2 actions (`nav2_msgs` only). ROS CI always runs in-process gtests where `RosNavBackend` and `MockNav2` share one executor: every goal uses `async_send_goal`, `poll` on handles, and `async_cancel_goal` into mock servers on one `GridSim` (no coupled send shortcut). Those tests assert nominal, stuck, and critical_battery gates, cancel-before-dock ordering, and reject-all failure. `colcon test` also runs `test_launch_nominal.py` with separate `mock_nav2_servers` and `bt_mission_node` processes; see DEVIATIONS.md if that launch step cannot see peers in the Actions runner image.
 
 ## Mission tree (excerpt)
 
