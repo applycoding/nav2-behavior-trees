@@ -43,6 +43,9 @@ class RosHarness {
     exec_.add_node(mock_);
     exec_.add_node(client_);
     nav2_bt_mission::RosNavBackend::useNodeSpinThread(false);
+    for (int i = 0; i < 64; ++i) {
+      exec_.spin_some();
+    }
   }
 
   bt_core::RunMetrics run() {

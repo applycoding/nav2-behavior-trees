@@ -421,6 +421,8 @@ void RosNavBackend::step() {
   if (coupled_sim_) {
     if (auto mock = mock_peer_.lock()) {
       mock->stepSimPublic();
+      ++remote_step_count_;
+      tick_sample_valid_ = false;
       return;
     }
   }
@@ -467,11 +469,13 @@ void RosNavBackend::waitForRemoteReady(std::chrono::milliseconds timeout) {
   if (local_sim_) {
     return;
   }
+  const bool coupled_ready = coupled_sim_ && static_cast<bool>(mock_peer_.lock());
   const auto deadline = std::chrono::steady_clock::now() + timeout;
   while (rclcpp::ok() && std::chrono::steady_clock::now() < deadline) {
-    const bool services =
-        step_client_->wait_for_service(std::chrono::milliseconds(0)) &&
-        sample_client_->wait_for_service(std::chrono::milliseconds(0));
+    const bool services = coupled_ready
+                              ? true
+                              : step_client_->wait_for_service(std::chrono::milliseconds(0)) &&
+                                    sample_client_->wait_for_service(std::chrono::milliseconds(0));
     const bool actions =
         nav_client_->wait_for_action_server(std::chrono::milliseconds(0)) &&
         follow_client_->wait_for_action_server(std::chrono::milliseconds(0)) &&

@@ -52,7 +52,7 @@ bt_core::RunMetrics runMissionRos(bt_core::ScenarioId scenario, const std::strin
       });
 
   auto spin_quiet = [&]() {
-    for (int i = 0; i < 16; ++i) {
+    for (int i = 0; i < 64; ++i) {
       if (opts.executor != nullptr) {
         opts.executor->spin_some();
       } else if (spin_node) {
