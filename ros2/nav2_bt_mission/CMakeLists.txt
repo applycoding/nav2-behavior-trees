@@ -15,9 +15,17 @@ find_package(nav2_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(behaviortree_cpp REQUIRED)
+find_package(behaviortree_cpp REQUIRED CONFIG)
 find_package(ament_index_cpp REQUIRED)
 find_package(OpenSSL REQUIRED)
+
+if(TARGET BT::behaviortree_cpp)
+  set(NAV2_BT_BTCPP_LIB BT::behaviortree_cpp)
+elseif(TARGET behaviortree_cpp::behaviortree_cpp)
+  set(NAV2_BT_BTCPP_LIB behaviortree_cpp::behaviortree_cpp)
+else()
+  message(FATAL_ERROR "BehaviorTree.CPP imported target not found after find_package")
+endif()
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/SimStep.srv"
@@ -42,7 +50,7 @@ set(BT_CORE_SOURCES
 add_library(bt_core_ros STATIC ${BT_CORE_SOURCES})
 set_target_properties(bt_core_ros PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(bt_core_ros PUBLIC ${BT_REPO_ROOT}/include)
-target_link_libraries(bt_core_ros PUBLIC behaviortree_cpp::behaviortree_cpp OpenSSL::Crypto)
+target_link_libraries(bt_core_ros PUBLIC ${NAV2_BT_BTCPP_LIB} OpenSSL::Crypto)
 target_compile_options(bt_core_ros PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 add_library(nav2_bt_ros_lib STATIC
