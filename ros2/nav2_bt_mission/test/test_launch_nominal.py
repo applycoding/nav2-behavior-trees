@@ -22,7 +22,11 @@ from launch_testing.actions import ReadyToTest
 
 @launch_testing.markers.keep_alive
 def generate_test_description():
-    extra_env = [SetEnvironmentVariable('RMW_IMPLEMENTATION', 'rmw_cyclonedds_cpp')]
+    fastdds_xml = os.path.join(os.path.dirname(__file__), 'fastdds_ci.xml')
+    extra_env = [
+        SetEnvironmentVariable('RMW_IMPLEMENTATION', 'rmw_fastrtps_cpp'),
+        SetEnvironmentVariable('FASTRTPS_DEFAULT_PROFILES_FILE', fastdds_xml),
+    ]
     btcpp_lib = '/opt/btcpp-4.11/lib'
     if os.path.isdir(btcpp_lib):
         extra_env.append(AppendEnvironmentVariable('LD_LIBRARY_PATH', btcpp_lib, separator=':'))
