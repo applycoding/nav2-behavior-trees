@@ -60,10 +60,16 @@ class TestNominalProcesses(unittest.TestCase):
 
     def test_mission_drove_remote_sim(self, proc_output, mission_proc):
         chunks = proc_output[mission_proc]
+
+        def as_text(part):
+            return part.text if hasattr(part, 'text') else str(part)
+
         if isinstance(chunks, (list, tuple)):
-            output = ''.join(chunks)
+            output = ''.join(as_text(p) for p in chunks)
         else:
-            output = ''.join(chunks.stdout or []) + ''.join(chunks.stderr or [])
+            stdout = chunks.stdout or []
+            stderr = chunks.stderr or []
+            output = ''.join(as_text(p) for p in stdout) + ''.join(as_text(p) for p in stderr)
         self.assertRegex(
             output,
             r'success=1\b',
