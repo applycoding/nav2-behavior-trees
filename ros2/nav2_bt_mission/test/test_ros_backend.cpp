@@ -2,16 +2,13 @@
 // Copyright 2026 Arpan Bom
 
 #include "bt_core/scenario_gates.hpp"
-#include "nav2_bt_mission/mock_nav2.hpp"
 #include "nav2_bt_mission/ros_nav_backend.hpp"
 #include "nav2_bt_mission/ros_runner.hpp"
 
 #include <gtest/gtest.h>
 #include <rclcpp/rclcpp.hpp>
 
-#include <chrono>
 #include <memory>
-#include <thread>
 
 namespace {
 
@@ -73,36 +70,3 @@ TEST(RosCriticalStack, CancelBeforeDock) {
   rclcpp::shutdown();
 }
 
-TEST(RosStack, RemoteDdsNominalSemanticGates) {
-  if (!rclcpp::ok()) {
-    rclcpp::init(0, nullptr);
-  }
-  auto cfg = bt_core::configForScenario(bt_core::ScenarioId::nominal);
-  auto sim = std::make_shared<bt_core::GridSim>(bt_core::GridSim::makeWorld(cfg));
-  auto mock = std::make_shared<nav2_bt_mission::MockNav2>(rclcpp::NodeOptions(), sim);
-  std::thread mock_spin([mock]() { rclcpp::spin(mock); });
-
-  auto client = std::make_shared<rclcpp::Node>("ros_test_remote_nominal");
-  nav2_bt_mission::RosNavBackend::useNodeSpinThread(true);
-  std::thread client_spin([client]() { rclcpp::spin(client); });
-
-  nav2_bt_mission::RosNavBackend backend(client, nullptr);
-  backend.waitForRemoteReady(std::chrono::seconds(60));
-  auto m = nav2_bt_mission::runMissionRos(bt_core::ScenarioId::nominal, treePath(), backend, client,
-                                          {});
-
-  nav2_bt_mission::RosNavBackend::useNodeSpinThread(false);
-  rclcpp::shutdown();
-  if (mock_spin.joinable()) {
-    mock_spin.join();
-  }
-  if (client_spin.joinable()) {
-    client_spin.join();
-  }
-
-  EXPECT_TRUE(m.success) << "ticks=" << m.ticks << " t=" << m.sim_time_sec;
-  EXPECT_GT(m.ticks, 500) << "mission ended too early";
-  EXPECT_LE(m.sim_time_sec, 400.0);
-  EXPECT_EQ(m.lanes_done, 19);
-  bt_core::test_gates::expectGlobalInvariants(m);
-}

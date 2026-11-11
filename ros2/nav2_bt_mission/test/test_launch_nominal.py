@@ -6,7 +6,7 @@ import unittest
 import launch_testing
 import launch_testing.markers
 from launch import LaunchDescription
-from launch.actions import RegisterEventHandler, Shutdown, TimerAction
+from launch.actions import RegisterEventHandler, SetEnvironmentVariable, Shutdown, TimerAction
 from launch.event_handlers import OnProcessExit
 from launch_ros.actions import Node
 from launch_testing.actions import ReadyToTest
@@ -29,8 +29,10 @@ def generate_test_description():
 
     return (
         LaunchDescription([
+            SetEnvironmentVariable('ROS_AUTOMATIC_DISCOVERY_RANGE', 'LOCALHOST'),
+            SetEnvironmentVariable('ROS_LOCALHOST_ONLY', '1'),
             mock_proc,
-            TimerAction(period=5.0, actions=[mission_proc]),
+            TimerAction(period=10.0, actions=[mission_proc]),
             RegisterEventHandler(
                 OnProcessExit(target_action=mission_proc, on_exit=Shutdown()),
             ),

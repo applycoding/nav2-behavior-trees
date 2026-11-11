@@ -40,6 +40,8 @@ int main(int argc, char** argv) {
   }
 
   std::cout << "success=" << metrics.success << " t=" << metrics.sim_time_sec << " ticks="
-            << metrics.ticks << '\n';
+            << metrics.ticks << " lanes=" << metrics.lanes_done << " backup=" << metrics.backup
+            << " sim_wait=" << metrics.sim_wait << " battery_zero=" << metrics.battery_zero
+            << '\n';
   return metrics.success ? 0 : 1;
 }
