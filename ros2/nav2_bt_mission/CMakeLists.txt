@@ -133,6 +133,9 @@ install(DIRECTORY ${BT_REPO_ROOT}/trees
 install(PROGRAMS scripts/run_nominal_cross.sh
   DESTINATION lib/${PROJECT_NAME})
 
+install(FILES test/cyclonedds_ci.xml test/fastdds_ci.xml
+  DESTINATION share/${PROJECT_NAME}/test)
+
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
 
