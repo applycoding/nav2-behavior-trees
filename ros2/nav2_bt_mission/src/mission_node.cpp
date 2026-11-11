@@ -5,13 +5,11 @@
 #include "nav2_bt_mission/ros_runner.hpp"
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
-#include <rclcpp/executors/multi_threaded_executor.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <chrono>
 #include <iostream>
 #include <string>
-#include <thread>
 
 int main(int argc, char** argv) {
   rclcpp::init(argc, argv);
@@ -28,19 +26,11 @@ int main(int argc, char** argv) {
   std::string pkg_share = ament_index_cpp::get_package_share_directory("nav2_bt_mission");
   std::string tree_xml = pkg_share + "/trees/mission.xml";
 
-  rclcpp::executors::MultiThreadedExecutor executor(rclcpp::ExecutorOptions(), 2);
-  executor.add_node(node);
-  std::thread spin_thread([&executor]() { executor.spin(); });
-
   auto sid = bt_core::scenarioFromName(scenario);
   auto metrics =
       nav2_bt_mission::runMissionRos(sid, tree_xml, backend, node, {});
 
-  executor.cancel();
   rclcpp::shutdown();
-  if (spin_thread.joinable()) {
-    spin_thread.join();
-  }
 
   std::cout << "success=" << metrics.success << " t=" << metrics.sim_time_sec << " ticks="
             << metrics.ticks << '\n';

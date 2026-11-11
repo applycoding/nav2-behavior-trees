@@ -145,17 +145,23 @@ std::optional<bt_core::GoalId> RosNavBackend::send(bt_core::GoalKind kind, bt_co
     }
   };
 
-  auto store_nav_handle = [this, id, mark_failed](
-                              const rclcpp_action::ClientGoalHandle<NavigateToPose>::SharedPtr& handle) {
-    if (!handle) {
+  const auto accept_goal =
+      [this, mark_failed]<typename ActionT>(
+          const typename rclcpp_action::Client<ActionT>::SharedPtr& client,
+          const typename ActionT::Goal& goal,
+          const rclcpp_action::Client<ActionT>::SendGoalOptions& opts,
+          typename rclcpp_action::ClientGoalHandle<ActionT>::SharedPtr& out) -> bool {
+    auto future = client->async_send_goal(goal, opts);
+    if (!waitWithSpin(future, node_, spin_executor_, std::chrono::seconds(10))) {
       mark_failed();
-      return;
+      return false;
     }
-    std::lock_guard<std::mutex> lock(mu_);
-    auto it = goals_.find(id);
-    if (it != goals_.end()) {
-      it->second.nav_handle = handle;
+    out = future.get();
+    if (!out) {
+      mark_failed();
+      return false;
     }
+    return true;
   };
 
   switch (kind) {
@@ -163,12 +169,13 @@ std::optional<bt_core::GoalId> RosNavBackend::send(bt_core::GoalKind kind, bt_co
       NavigateToPose::Goal goal;
       goal.pose = makePose(args.target_x, args.target_y);
       rclcpp_action::Client<NavigateToPose>::SendGoalOptions opts;
-      opts.goal_response_callback = [store_nav_handle](
-          const rclcpp_action::ClientGoalHandle<NavigateToPose>::SharedPtr handle) {
-        store_nav_handle(handle);
-      };
       opts.result_callback = [result_cb](const auto& wrapped) { result_cb(wrapped.code); };
-      nav_client_->async_send_goal(goal, opts);
+      rclcpp_action::ClientGoalHandle<NavigateToPose>::SharedPtr handle;
+      if (!accept_goal<NavigateToPose>(nav_client_, goal, opts, handle)) {
+        return std::nullopt;
+      }
+      std::lock_guard<std::mutex> lock(mu_);
+      goals_[id].nav_handle = handle;
       break;
     }
     case bt_core::GoalKind::FollowLane: {
@@ -177,96 +184,72 @@ std::optional<bt_core::GoalId> RosNavBackend::send(bt_core::GoalKind kind, bt_co
           "bt_lane:" + std::to_string(args.lane_zone) + ":" + std::to_string(args.lane_index);
       goal.goal_checker_id = "default";
       rclcpp_action::Client<FollowPath>::SendGoalOptions opts;
-      opts.goal_response_callback = [this, id, mark_failed](
-          const rclcpp_action::ClientGoalHandle<FollowPath>::SharedPtr handle) {
-        if (!handle) {
-          mark_failed();
-          return;
-        }
-        std::lock_guard<std::mutex> lock(mu_);
-        goals_[id].follow_handle = handle;
-      };
       opts.result_callback = [result_cb](const auto& wrapped) { result_cb(wrapped.code); };
-      follow_client_->async_send_goal(goal, opts);
+      rclcpp_action::ClientGoalHandle<FollowPath>::SharedPtr handle;
+      if (!accept_goal<FollowPath>(follow_client_, goal, opts, handle)) {
+        return std::nullopt;
+      }
+      std::lock_guard<std::mutex> lock(mu_);
+      goals_[id].follow_handle = handle;
       break;
     }
     case bt_core::GoalKind::BackUp: {
       BackUp::Goal goal;
       goal.speed = 0.2f;
       rclcpp_action::Client<BackUp>::SendGoalOptions opts;
-      opts.goal_response_callback = [this, id, mark_failed](
-          const rclcpp_action::ClientGoalHandle<BackUp>::SharedPtr handle) {
-        if (!handle) {
-          mark_failed();
-          return;
-        }
-        std::lock_guard<std::mutex> lock(mu_);
-        goals_[id].backup_handle = handle;
-      };
       opts.result_callback = [result_cb](const auto& wrapped) { result_cb(wrapped.code); };
-      backup_client_->async_send_goal(goal, opts);
+      rclcpp_action::ClientGoalHandle<BackUp>::SharedPtr handle;
+      if (!accept_goal<BackUp>(backup_client_, goal, opts, handle)) {
+        return std::nullopt;
+      }
+      std::lock_guard<std::mutex> lock(mu_);
+      goals_[id].backup_handle = handle;
       break;
     }
     case bt_core::GoalKind::Wait: {
       Wait::Goal goal;
       goal.time = rclcpp::Duration::from_seconds(args.wait_sec);
       rclcpp_action::Client<Wait>::SendGoalOptions opts;
-      opts.goal_response_callback = [this, id, mark_failed](
-          const rclcpp_action::ClientGoalHandle<Wait>::SharedPtr handle) {
-        if (!handle) {
-          mark_failed();
-          return;
-        }
-        std::lock_guard<std::mutex> lock(mu_);
-        goals_[id].wait_handle = handle;
-      };
       opts.result_callback = [result_cb](const auto& wrapped) { result_cb(wrapped.code); };
-      wait_client_->async_send_goal(goal, opts);
+      rclcpp_action::ClientGoalHandle<Wait>::SharedPtr handle;
+      if (!accept_goal<Wait>(wait_client_, goal, opts, handle)) {
+        return std::nullopt;
+      }
+      std::lock_guard<std::mutex> lock(mu_);
+      goals_[id].wait_handle = handle;
       break;
     }
     case bt_core::GoalKind::Dock: {
       rclcpp_action::Client<Wait>::SendGoalOptions opts;
-      opts.goal_response_callback = [this, id, mark_failed](
-          const rclcpp_action::ClientGoalHandle<Wait>::SharedPtr handle) {
-        if (!handle) {
-          mark_failed();
-          return;
-        }
-        std::lock_guard<std::mutex> lock(mu_);
-        goals_[id].wait_handle = handle;
-      };
       opts.result_callback = [result_cb](const auto& wrapped) { result_cb(wrapped.code); };
-      dock_client_->async_send_goal(Wait::Goal{}, opts);
+      rclcpp_action::ClientGoalHandle<Wait>::SharedPtr handle;
+      if (!accept_goal<Wait>(dock_client_, Wait::Goal{}, opts, handle)) {
+        return std::nullopt;
+      }
+      std::lock_guard<std::mutex> lock(mu_);
+      goals_[id].wait_handle = handle;
       break;
     }
     case bt_core::GoalKind::Undock: {
       rclcpp_action::Client<Wait>::SendGoalOptions opts;
-      opts.goal_response_callback = [this, id, mark_failed](
-          const rclcpp_action::ClientGoalHandle<Wait>::SharedPtr handle) {
-        if (!handle) {
-          mark_failed();
-          return;
-        }
-        std::lock_guard<std::mutex> lock(mu_);
-        goals_[id].wait_handle = handle;
-      };
       opts.result_callback = [result_cb](const auto& wrapped) { result_cb(wrapped.code); };
-      undock_client_->async_send_goal(Wait::Goal{}, opts);
+      rclcpp_action::ClientGoalHandle<Wait>::SharedPtr handle;
+      if (!accept_goal<Wait>(undock_client_, Wait::Goal{}, opts, handle)) {
+        return std::nullopt;
+      }
+      std::lock_guard<std::mutex> lock(mu_);
+      goals_[id].wait_handle = handle;
       break;
     }
     case bt_core::GoalKind::Charge: {
       rclcpp_action::Client<Wait>::SendGoalOptions opts;
-      opts.goal_response_callback = [this, id, mark_failed](
-          const rclcpp_action::ClientGoalHandle<Wait>::SharedPtr handle) {
-        if (!handle) {
-          mark_failed();
-          return;
-        }
-        std::lock_guard<std::mutex> lock(mu_);
-        goals_[id].wait_handle = handle;
-      };
       opts.result_callback = [result_cb](const auto& wrapped) { result_cb(wrapped.code); };
-      charge_client_->async_send_goal(Wait::Goal{}, opts);
+      rclcpp_action::ClientGoalHandle<Wait>::SharedPtr handle;
+      if (!accept_goal<Wait>(charge_client_, Wait::Goal{}, opts, handle)) {
+        return std::nullopt;
+      }
+      std::lock_guard<std::mutex> lock(mu_);
+      goals_[id].wait_handle = handle;
       break;
     }
     default: {
@@ -276,27 +259,7 @@ std::optional<bt_core::GoalId> RosNavBackend::send(bt_core::GoalKind kind, bt_co
     }
   }
 
-  const auto handle_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(10);
-  while (rclcpp::ok() && std::chrono::steady_clock::now() < handle_deadline) {
-    spinBackend(node_, spin_executor_);
-    std::lock_guard<std::mutex> lock(mu_);
-    auto it = goals_.find(id);
-    if (it == goals_.end()) {
-      return std::nullopt;
-    }
-    if (it->second.status == bt_core::GoalStatus::FAILED) {
-      return std::nullopt;
-    }
-    const GoalRecord& rec = it->second;
-    const bool has_handle = static_cast<bool>(rec.nav_handle) || static_cast<bool>(rec.follow_handle) ||
-                            static_cast<bool>(rec.backup_handle) || static_cast<bool>(rec.wait_handle);
-    if (has_handle) {
-      return id;
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
-  }
-  mark_failed();
-  return std::nullopt;
+  return id;
 }
 
 bt_core::GoalState RosNavBackend::poll(bt_core::GoalId id) {
