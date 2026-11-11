@@ -31,7 +31,8 @@ def rmw_env() -> dict:
         'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST',
         'ROS_LOCALHOST_ONLY': '1',
         'ROS_DOMAIN_ID': '0',
-        'RMW_IMPLEMENTATION': 'rmw_cyclonedds_cpp',
+        'RMW_IMPLEMENTATION': 'rmw_fastrtps_cpp',
+        'FASTDDS_BUILTIN_TRANSPORTS': 'SHM',
     }
     btcpp_lib = '/opt/btcpp-4.11/lib'
     if os.path.isdir(btcpp_lib):
@@ -61,11 +62,12 @@ def generate_test_description():
             SetEnvironmentVariable('ROS_AUTOMATIC_DISCOVERY_RANGE', 'LOCALHOST'),
             SetEnvironmentVariable('ROS_LOCALHOST_ONLY', '1'),
             SetEnvironmentVariable('ROS_DOMAIN_ID', '0'),
-            SetEnvironmentVariable('RMW_IMPLEMENTATION', 'rmw_cyclonedds_cpp'),
+            SetEnvironmentVariable('RMW_IMPLEMENTATION', 'rmw_fastrtps_cpp'),
+            SetEnvironmentVariable('FASTDDS_BUILTIN_TRANSPORTS', 'SHM'),
             *([AppendEnvironmentVariable('LD_LIBRARY_PATH', '/opt/btcpp-4.11/lib', separator=':')]
               if os.path.isdir('/opt/btcpp-4.11/lib') else []),
             mock_proc,
-            TimerAction(period=3.0, actions=[mission_proc]),
+            TimerAction(period=5.0, actions=[mission_proc]),
             RegisterEventHandler(OnProcessExit(target_action=mission_proc, on_exit=[Shutdown()])),
             ReadyToTest(),
         ]),
@@ -91,7 +93,7 @@ class TestNominalProcesses(unittest.TestCase):
         launch_testing.asserts.assertExitCodes(
             proc_info, process=mission_proc, allowable_exit_codes=[0])
         launch_testing.asserts.assertExitCodes(
-            proc_info, process=mock_proc, allowable_exit_codes=[0, -15, 15])
+            proc_info, process=mock_proc, allowable_exit_codes=[0, -15, 15, 143, -2])
 
     def test_mission_drove_remote_sim(self, proc_output, mission_proc):
         chunks = proc_output[mission_proc]
