@@ -59,8 +59,11 @@ class TestNominalProcesses(unittest.TestCase):
             proc_info, process=mission_proc, allowable_exit_codes=[0])
 
     def test_mission_drove_remote_sim(self, proc_output, mission_proc):
-        io = proc_output[mission_proc]
-        output = ''.join(io.stdout or []) + ''.join(io.stderr or [])
+        chunks = proc_output[mission_proc]
+        if isinstance(chunks, (list, tuple)):
+            output = ''.join(chunks)
+        else:
+            output = ''.join(chunks.stdout or []) + ''.join(chunks.stderr or [])
         self.assertRegex(
             output,
             r'success=1\b',
