@@ -130,6 +130,9 @@ install(DIRECTORY launch
 install(DIRECTORY ${BT_REPO_ROOT}/trees
   DESTINATION share/${PROJECT_NAME})
 
+install(PROGRAMS scripts/run_nominal_cross.sh
+  DESTINATION lib/${PROJECT_NAME})
+
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
 

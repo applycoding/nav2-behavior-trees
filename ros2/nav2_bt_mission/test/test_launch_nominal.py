@@ -12,12 +12,8 @@ from launch import LaunchDescription
 from launch.actions import (
     AppendEnvironmentVariable,
     ExecuteProcess,
-    RegisterEventHandler,
     SetEnvironmentVariable,
-    Shutdown,
-    TimerAction,
 )
-from launch.event_handlers import OnProcessExit
 from launch_testing.actions import ReadyToTest
 
 
@@ -28,7 +24,10 @@ def install_bin(name: str) -> str:
 
 @launch_testing.markers.keep_alive
 def generate_test_description():
+    prefix = get_package_prefix('nav2_bt_mission')
+    script = os.path.join(prefix, 'lib', 'nav2_bt_mission', 'run_nominal_cross.sh')
     fastdds_xml = os.path.join(os.path.dirname(__file__), 'fastdds_ci.xml')
+
     proc_env = {
         'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST',
         'ROS_LOCALHOST_ONLY': '1',
@@ -40,17 +39,11 @@ def generate_test_description():
     if os.path.isdir(btcpp_lib):
         proc_env['LD_LIBRARY_PATH'] = btcpp_lib + os.pathsep + os.environ.get('LD_LIBRARY_PATH', '')
 
-    mock_proc = ExecuteProcess(
-        cmd=[install_bin('mock_nav2_servers')],
+    cross_proc = ExecuteProcess(
+        cmd=['bash', script, install_bin('mock_nav2_servers'), install_bin('bt_mission_node')],
         output='screen',
         additional_env=proc_env,
-        name='mock_nav2_servers',
-    )
-    mission_proc = ExecuteProcess(
-        cmd=[install_bin('bt_mission_node'), '--scenario', 'nominal'],
-        output='screen',
-        additional_env=proc_env,
-        name='bt_mission_node',
+        name='nominal_cross_process',
     )
 
     return (
@@ -62,37 +55,31 @@ def generate_test_description():
             SetEnvironmentVariable('FASTRTPS_DEFAULT_PROFILES_FILE', fastdds_xml),
             *([AppendEnvironmentVariable('LD_LIBRARY_PATH', btcpp_lib, separator=':')]
               if os.path.isdir(btcpp_lib) else []),
-            mock_proc,
-            TimerAction(period=15.0, actions=[mission_proc]),
-            RegisterEventHandler(OnProcessExit(target_action=mission_proc, on_exit=[Shutdown()])),
+            cross_proc,
             ReadyToTest(),
         ]),
         {
-            'mock_proc': mock_proc,
-            'mission_proc': mission_proc,
+            'cross_proc': cross_proc,
         },
     )
 
 
 class TestNominalLaunchWait(unittest.TestCase):
 
-    def test_wait_for_processes(self, proc_info, mock_proc, mission_proc):
-        proc_info.assertWaitForStartup(process=mock_proc, timeout=60)
-        proc_info.assertWaitForStartup(process=mission_proc, timeout=60)
-        proc_info.assertWaitForShutdown(process=mission_proc, timeout=1200)
+    def test_wait_for_cross_process_run(self, proc_info, cross_proc):
+        proc_info.assertWaitForStartup(process=cross_proc, timeout=60)
+        proc_info.assertWaitForShutdown(process=cross_proc, timeout=1200)
 
 
 @launch_testing.post_shutdown_test()
 class TestNominalProcesses(unittest.TestCase):
 
-    def test_process_exit_codes(self, proc_info, mock_proc, mission_proc):
+    def test_cross_process_exit_code(self, proc_info, cross_proc):
         launch_testing.asserts.assertExitCodes(
-            proc_info, process=mission_proc, allowable_exit_codes=[0])
-        launch_testing.asserts.assertExitCodes(
-            proc_info, process=mock_proc, allowable_exit_codes=[0])
+            proc_info, process=cross_proc, allowable_exit_codes=[0])
 
-    def test_mission_drove_remote_sim(self, proc_output, mission_proc):
-        chunks = proc_output[mission_proc]
+    def test_mission_drove_remote_sim(self, proc_output, cross_proc):
+        chunks = proc_output[cross_proc]
 
         def as_text(part):
             raw = part.text if hasattr(part, 'text') else part
