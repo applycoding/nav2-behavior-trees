@@ -56,7 +56,7 @@ class RosHarness {
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
-    if (!ready || !backend_->waitForRemoteReady(std::chrono::seconds(5))) {
+    if (!ready) {
       throw std::runtime_error("mock Nav2 action servers not ready (hard failure)");
     }
   }

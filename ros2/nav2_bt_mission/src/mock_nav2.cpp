@@ -168,9 +168,9 @@ MockNav2::MockNav2(const rclcpp::NodeOptions& options, std::shared_ptr<bt_core::
   };
 
   make_wait_on("wait", bt_core::GoalKind::Wait, wait_server_);
-  make_wait_on("dock", bt_core::GoalKind::Dock, dock_server_);
-  make_wait_on("undock", bt_core::GoalKind::Undock, undock_server_);
-  make_wait_on("charge", bt_core::GoalKind::Charge, charge_server_);
+  make_wait_on("/mock_dock/dock", bt_core::GoalKind::Dock, dock_server_);
+  make_wait_on("/mock_dock/undock", bt_core::GoalKind::Undock, undock_server_);
+  make_wait_on("/mock_dock/charge", bt_core::GoalKind::Charge, charge_server_);
 
   clear_srv_ = create_service<nav2_msgs::srv::ClearEntireCostmap>(
       kGlobalCostmapClear,

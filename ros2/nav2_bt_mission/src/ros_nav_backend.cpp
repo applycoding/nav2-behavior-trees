@@ -127,9 +127,9 @@ RosNavBackend::RosNavBackend(rclcpp::Node::SharedPtr node, std::shared_ptr<bt_co
       rclcpp_action::create_client<FollowPath>(node_, "/mock_nav2_servers/follow_path");
   backup_client_ = rclcpp_action::create_client<BackUp>(node_, "/mock_nav2_servers/backup");
   wait_client_ = rclcpp_action::create_client<Wait>(node_, "/mock_nav2_servers/wait");
-  dock_client_ = rclcpp_action::create_client<Wait>(node_, "/mock_nav2_servers/dock");
-  undock_client_ = rclcpp_action::create_client<Wait>(node_, "/mock_nav2_servers/undock");
-  charge_client_ = rclcpp_action::create_client<Wait>(node_, "/mock_nav2_servers/charge");
+  dock_client_ = rclcpp_action::create_client<Wait>(node_, "/mock_dock/dock");
+  undock_client_ = rclcpp_action::create_client<Wait>(node_, "/mock_dock/undock");
+  charge_client_ = rclcpp_action::create_client<Wait>(node_, "/mock_dock/charge");
   clear_client_ = node_->create_client<nav2_msgs::srv::ClearEntireCostmap>(
       "/global_costmap/clear_entirely_global_costmap");
   if (!local_sim_) {
