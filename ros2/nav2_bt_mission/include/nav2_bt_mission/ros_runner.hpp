@@ -18,6 +18,7 @@ struct RosRunOptions {
   bool write_trace{false};
   std::string out_dir;
   rclcpp::Executor* executor{nullptr};
+  bool skip_remote_ready{false};
 };
 
 bt_core::RunMetrics runMissionRos(bt_core::ScenarioId scenario, const std::string& tree_xml,

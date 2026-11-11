@@ -23,7 +23,9 @@ bt_core::RunMetrics runMissionRos(bt_core::ScenarioId scenario, const std::strin
     backend.setSpinExecutor(opts.executor);
   }
   bt_core::setFrozenWorldScenario(scenario);
-  backend.waitForRemoteReady();
+  if (!opts.skip_remote_ready) {
+    backend.waitForRemoteReady();
+  }
   bt_core::RunMetrics metrics;
   metrics.scenario = bt_core::scenarioName(scenario);
 
