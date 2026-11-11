@@ -27,15 +27,9 @@ def generate_test_description():
     if os.path.isdir(btcpp_lib):
         extra_env.append(AppendEnvironmentVariable('LD_LIBRARY_PATH', btcpp_lib, separator=':'))
 
-    mock_proc = Node(
-        package='nav2_bt_mission',
-        executable='mock_nav2_servers',
-        arguments=['--scenario', 'nominal'],
-        output='screen',
-    )
     mission_proc = Node(
         package='nav2_bt_mission',
-        executable='bt_mission_node',
+        executable='bt_mission_stack',
         arguments=['--scenario', 'nominal'],
         output='screen',
     )
@@ -45,15 +39,13 @@ def generate_test_description():
             SetEnvironmentVariable('ROS_AUTOMATIC_DISCOVERY_RANGE', 'LOCALHOST'),
             SetEnvironmentVariable('ROS_LOCALHOST_ONLY', '1'),
             *extra_env,
-            mock_proc,
-            TimerAction(period=10.0, actions=[mission_proc]),
+            mission_proc,
             RegisterEventHandler(
                 OnProcessExit(target_action=mission_proc, on_exit=Shutdown()),
             ),
             ReadyToTest(),
         ]),
         {
-            'mock_proc': mock_proc,
             'mission_proc': mission_proc,
         },
     )

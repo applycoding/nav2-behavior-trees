@@ -109,13 +109,19 @@ target_link_libraries(mock_nav2_servers nav2_bt_ros_lib)
 nav2_bt_link_static_btcpp(mock_nav2_servers)
 
 add_executable(bt_mission_node src/mission_node.cpp)
+add_executable(bt_mission_stack src/stack_nominal_node.cpp)
+target_compile_definitions(bt_mission_stack PRIVATE BT_SOURCE_DIR="${BT_REPO_ROOT}")
+target_link_libraries(bt_mission_stack nav2_bt_ros_lib)
+nav2_bt_link_static_btcpp(bt_mission_stack)
+nav2_bt_set_rpath(bt_mission_stack)
+ament_target_dependencies(bt_mission_stack rclcpp)
 nav2_bt_set_rpath(mock_nav2_servers)
 nav2_bt_set_rpath(bt_mission_node)
 ament_target_dependencies(bt_mission_node rclcpp ament_index_cpp)
 target_link_libraries(bt_mission_node nav2_bt_ros_lib)
 nav2_bt_link_static_btcpp(bt_mission_node)
 
-install(TARGETS mock_nav2_servers bt_mission_node
+install(TARGETS mock_nav2_servers bt_mission_node bt_mission_stack
   DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY include/
   DESTINATION include)
