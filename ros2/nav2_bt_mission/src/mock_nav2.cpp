@@ -211,15 +211,11 @@ MockNav2::MockNav2(const rclcpp::NodeOptions& options, std::shared_ptr<bt_core::
 
 bt_core::GoalId MockNav2::registerGoal(const rclcpp_action::GoalUUID& uuid, bt_core::GoalKind kind,
                                        const bt_core::GoalArgs& args) {
-  auto send_once = [&]() { return sim_->send(kind, args); };
-  auto gid = send_once();
-  if (!gid) {
-    for (const auto& entry : uuid_to_gid_) {
-      sim_->cancel(entry.second);
-    }
-    uuid_to_gid_.clear();
-    gid = send_once();
+  for (const auto& entry : uuid_to_gid_) {
+    sim_->cancel(entry.second);
   }
+  uuid_to_gid_.clear();
+  auto gid = sim_->send(kind, args);
   if (!gid) {
     return 0;
   }
