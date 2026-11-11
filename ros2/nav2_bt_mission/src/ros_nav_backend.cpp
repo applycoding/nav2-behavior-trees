@@ -122,7 +122,7 @@ void RosNavBackend::setMockPeer(const std::shared_ptr<MockNav2>& mock) { mock_pe
 
 RosNavBackend::RosNavBackend(rclcpp::Node::SharedPtr node, std::shared_ptr<bt_core::GridSim> local_sim)
     : node_(std::move(node)), local_sim_(std::move(local_sim)) {
-  const bool on_mock_node = node_->get_name() == "mock_nav2_servers";
+  const bool on_mock_node = std::string(node_->get_name()) == "mock_nav2_servers";
   const std::string nav_action = on_mock_node ? "navigate_to_pose" : "/mock_nav2_servers/navigate_to_pose";
   const std::string follow_action = on_mock_node ? "follow_path" : "/mock_nav2_servers/follow_path";
   const std::string backup_action = on_mock_node ? "backup" : "/mock_nav2_servers/backup";
