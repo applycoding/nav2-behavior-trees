@@ -67,6 +67,7 @@ bt_core::RunMetrics runMissionRos(bt_core::ScenarioId scenario, const std::strin
   const int max_ticks = bt_core::MissionParams::MAX_TICKS;
   const bool spin_ros = !backend.usesLocalSim();
   while (root == BT::NodeStatus::RUNNING && backend.tick() < max_ticks) {
+    backend.beginMissionTick();
     if (spin_ros) {
       spin_quiet();
     }

@@ -49,6 +49,8 @@ class RosNavBackend : public bt_core::NavBackend {
 
   void waitForRemoteReady(std::chrono::milliseconds timeout = std::chrono::seconds(60));
 
+  void beginMissionTick();
+
   void setSpinExecutor(rclcpp::Executor* executor) { spin_executor_ = executor; }
 
   void setMockPeer(const std::shared_ptr<MockNav2>& mock);
@@ -96,6 +98,8 @@ class RosNavBackend : public bt_core::NavBackend {
   mutable int remote_tick_{0};
   mutable bt_core::WorldSample last_remote_sample_{};
   mutable bool has_remote_sample_{false};
+  mutable bool tick_sample_valid_{false};
+  mutable bt_core::WorldSample tick_sample_{};
   rclcpp::Executor* spin_executor_{nullptr};
   std::weak_ptr<MockNav2> mock_peer_;
   std::shared_ptr<bt_core::GridSim> coupled_sim_;

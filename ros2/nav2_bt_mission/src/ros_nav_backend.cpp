@@ -91,6 +91,12 @@ bool acceptActionGoal(
 
 }  // namespace
 
+void RosNavBackend::beginMissionTick() {
+  if (!local_sim_) {
+    tick_sample_valid_ = false;
+  }
+}
+
 void RosNavBackend::setMockPeer(const std::shared_ptr<MockNav2>& mock) { mock_peer_ = mock; }
 
 void RosNavBackend::setCoupledSim(std::shared_ptr<bt_core::GridSim> sim) { coupled_sim_ = std::move(sim); }
@@ -340,12 +346,17 @@ bt_core::WorldSample RosNavBackend::snapshot() const {
   if (coupled_sim_) {
     return coupled_sim_->snapshot();
   }
-  if (!sample_client_->wait_for_service(std::chrono::seconds(5))) {
+  if (tick_sample_valid_) {
+    return tick_sample_;
+  }
+  if (!sample_client_->wait_for_service(std::chrono::milliseconds(500))) {
     return last_remote_sample_;
   }
   auto req = std::make_shared<nav2_bt_mission::srv::GetWorldSample::Request>();
   auto fut = sample_client_->async_send_request(req);
-  if (!waitWithSpin(fut, node_, spin_executor_, std::chrono::seconds(5))) {
+  const auto rc =
+      rclcpp::spin_until_future_complete(node_, fut, std::chrono::seconds(30));
+  if (rc != rclcpp::FutureReturnCode::SUCCESS) {
     return last_remote_sample_;
   }
   auto res = fut.get();
@@ -357,7 +368,9 @@ bt_core::WorldSample RosNavBackend::snapshot() const {
   last_remote_sample_.cov_pct = {res->cov_pct[0], res->cov_pct[1], res->cov_pct[2]};
   remote_tick_ = res->tick;
   has_remote_sample_ = true;
-  return last_remote_sample_;
+  tick_sample_ = last_remote_sample_;
+  tick_sample_valid_ = true;
+  return tick_sample_;
 }
 
 void RosNavBackend::step() {
@@ -371,12 +384,18 @@ void RosNavBackend::step() {
       return;
     }
   }
-  if (!step_client_->wait_for_service(std::chrono::seconds(5))) {
+  if (!step_client_->wait_for_service(std::chrono::milliseconds(500))) {
     return;
   }
   auto req = std::make_shared<nav2_bt_mission::srv::SimStep::Request>();
   auto fut = step_client_->async_send_request(req);
-  waitWithSpin(fut, node_, spin_executor_, std::chrono::seconds(5));
+  const auto rc =
+      rclcpp::spin_until_future_complete(node_, fut, std::chrono::seconds(30));
+  if (rc != rclcpp::FutureReturnCode::SUCCESS) {
+    return;
+  }
+  (void)fut.get();
+  tick_sample_valid_ = false;
   spinBackend(node_, spin_executor_);
 }
 
