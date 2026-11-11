@@ -20,10 +20,22 @@ from launch.actions import (
 from launch.event_handlers import OnProcessExit
 from launch_testing.actions import ReadyToTest
 
+DISCOVERY_SERVER = '127.0.0.1:11811'
+DISCOVERY_BIN_CANDIDATES = (
+    '/opt/ros/humble/lib/rmw_fastrtps_cpp/fastdds_discovery_server',
+)
+
 
 def install_bin(name: str) -> str:
     prefix = get_package_prefix('nav2_bt_mission')
     return os.path.join(prefix, 'lib', 'nav2_bt_mission', name)
+
+
+def discovery_server_bin() -> str:
+    for path in DISCOVERY_BIN_CANDIDATES:
+        if os.path.isfile(path):
+            return path
+    return DISCOVERY_BIN_CANDIDATES[0]
 
 
 def rmw_env() -> dict:
@@ -32,7 +44,7 @@ def rmw_env() -> dict:
         'ROS_LOCALHOST_ONLY': '1',
         'ROS_DOMAIN_ID': '0',
         'RMW_IMPLEMENTATION': 'rmw_fastrtps_cpp',
-        'FASTDDS_BUILTIN_TRANSPORTS': 'SHM',
+        'ROS_DISCOVERY_SERVER': DISCOVERY_SERVER,
     }
     btcpp_lib = '/opt/btcpp-4.11/lib'
     if os.path.isdir(btcpp_lib):
@@ -44,6 +56,12 @@ def rmw_env() -> dict:
 def generate_test_description():
     proc_env = rmw_env()
 
+    discovery_proc = ExecuteProcess(
+        cmd=[discovery_server_bin(), '-i', '0'],
+        output='screen',
+        additional_env=proc_env,
+        name='fastdds_discovery_server',
+    )
     mock_proc = ExecuteProcess(
         cmd=[install_bin('mock_nav2_servers')],
         output='screen',
@@ -63,15 +81,17 @@ def generate_test_description():
             SetEnvironmentVariable('ROS_LOCALHOST_ONLY', '1'),
             SetEnvironmentVariable('ROS_DOMAIN_ID', '0'),
             SetEnvironmentVariable('RMW_IMPLEMENTATION', 'rmw_fastrtps_cpp'),
-            SetEnvironmentVariable('FASTDDS_BUILTIN_TRANSPORTS', 'SHM'),
+            SetEnvironmentVariable('ROS_DISCOVERY_SERVER', DISCOVERY_SERVER),
             *([AppendEnvironmentVariable('LD_LIBRARY_PATH', '/opt/btcpp-4.11/lib', separator=':')]
               if os.path.isdir('/opt/btcpp-4.11/lib') else []),
-            mock_proc,
-            TimerAction(period=5.0, actions=[mission_proc]),
+            discovery_proc,
+            TimerAction(period=2.0, actions=[mock_proc]),
+            TimerAction(period=8.0, actions=[mission_proc]),
             RegisterEventHandler(OnProcessExit(target_action=mission_proc, on_exit=[Shutdown()])),
             ReadyToTest(),
         ]),
         {
+            'discovery_proc': discovery_proc,
             'mock_proc': mock_proc,
             'mission_proc': mission_proc,
         },
