@@ -122,11 +122,15 @@ void RosNavBackend::setMockPeer(const std::shared_ptr<MockNav2>& mock) { mock_pe
 
 RosNavBackend::RosNavBackend(rclcpp::Node::SharedPtr node, std::shared_ptr<bt_core::GridSim> local_sim)
     : node_(std::move(node)), local_sim_(std::move(local_sim)) {
-  nav_client_ = rclcpp_action::create_client<NavigateToPose>(node_, "/mock_nav2_servers/navigate_to_pose");
-  follow_client_ =
-      rclcpp_action::create_client<FollowPath>(node_, "/mock_nav2_servers/follow_path");
-  backup_client_ = rclcpp_action::create_client<BackUp>(node_, "/mock_nav2_servers/backup");
-  wait_client_ = rclcpp_action::create_client<Wait>(node_, "/mock_nav2_servers/wait");
+  const bool on_mock_node = node_->get_name() == "mock_nav2_servers";
+  const std::string nav_action = on_mock_node ? "navigate_to_pose" : "/mock_nav2_servers/navigate_to_pose";
+  const std::string follow_action = on_mock_node ? "follow_path" : "/mock_nav2_servers/follow_path";
+  const std::string backup_action = on_mock_node ? "backup" : "/mock_nav2_servers/backup";
+  const std::string wait_action = on_mock_node ? "wait" : "/mock_nav2_servers/wait";
+  nav_client_ = rclcpp_action::create_client<NavigateToPose>(node_, nav_action);
+  follow_client_ = rclcpp_action::create_client<FollowPath>(node_, follow_action);
+  backup_client_ = rclcpp_action::create_client<BackUp>(node_, backup_action);
+  wait_client_ = rclcpp_action::create_client<Wait>(node_, wait_action);
   dock_client_ = rclcpp_action::create_client<Wait>(node_, "/mock_dock/dock");
   undock_client_ = rclcpp_action::create_client<Wait>(node_, "/mock_dock/undock");
   charge_client_ = rclcpp_action::create_client<Wait>(node_, "/mock_dock/charge");

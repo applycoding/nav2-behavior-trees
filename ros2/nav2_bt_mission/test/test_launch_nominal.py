@@ -10,9 +10,12 @@ import launch_testing.markers
 from launch import LaunchDescription
 from launch.actions import (
     AppendEnvironmentVariable,
+    RegisterEventHandler,
     SetEnvironmentVariable,
+    Shutdown,
     TimerAction,
 )
+from launch.event_handlers import OnProcessExit
 from launch_ros.actions import Node
 from launch_testing.actions import ReadyToTest
 
@@ -44,6 +47,7 @@ def generate_test_description():
             *extra_env,
             mock_proc,
             TimerAction(period=8.0, actions=[mission_proc]),
+            RegisterEventHandler(OnProcessExit(target_action=mission_proc, on_exit=[Shutdown()])),
             ReadyToTest(),
         ]),
         {
@@ -59,7 +63,6 @@ class TestNominalLaunchWait(unittest.TestCase):
         proc_info.assertWaitForStartup(process=mock_proc, timeout=60)
         proc_info.assertWaitForStartup(process=mission_proc, timeout=60)
         proc_info.assertWaitForShutdown(process=mission_proc, timeout=1200)
-        proc_info.assertWaitForShutdown(process=mock_proc, timeout=120)
 
 
 @launch_testing.post_shutdown_test()
