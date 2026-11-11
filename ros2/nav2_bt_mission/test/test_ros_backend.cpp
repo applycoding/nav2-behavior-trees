@@ -51,7 +51,6 @@ class RosHarness {
   bt_core::RunMetrics run() {
     nav2_bt_mission::RosRunOptions opts;
     opts.executor = &exec_;
-    opts.skip_remote_ready = true;
     return nav2_bt_mission::runMissionRos(scenario_, treePath(), *backend_, client_, opts);
   }
 

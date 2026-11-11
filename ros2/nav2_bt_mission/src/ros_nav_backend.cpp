@@ -465,6 +465,16 @@ double RosNavBackend::simTimeSec() const {
   return tick() * bt_core::MissionParams::DT_SEC;
 }
 
+bool RosNavBackend::remoteActionServersReady() const {
+  return nav_client_->wait_for_action_server(std::chrono::milliseconds(0)) &&
+         follow_client_->wait_for_action_server(std::chrono::milliseconds(0)) &&
+         backup_client_->wait_for_action_server(std::chrono::milliseconds(0)) &&
+         wait_client_->wait_for_action_server(std::chrono::milliseconds(0)) &&
+         dock_client_->wait_for_action_server(std::chrono::milliseconds(0)) &&
+         undock_client_->wait_for_action_server(std::chrono::milliseconds(0)) &&
+         charge_client_->wait_for_action_server(std::chrono::milliseconds(0));
+}
+
 void RosNavBackend::waitForRemoteReady(std::chrono::milliseconds timeout) {
   if (local_sim_) {
     return;
@@ -476,22 +486,17 @@ void RosNavBackend::waitForRemoteReady(std::chrono::milliseconds timeout) {
                               ? true
                               : step_client_->wait_for_service(std::chrono::milliseconds(0)) &&
                                     sample_client_->wait_for_service(std::chrono::milliseconds(0));
-    const bool actions =
-        nav_client_->wait_for_action_server(std::chrono::milliseconds(0)) &&
-        follow_client_->wait_for_action_server(std::chrono::milliseconds(0)) &&
-        backup_client_->wait_for_action_server(std::chrono::milliseconds(0)) &&
-        wait_client_->wait_for_action_server(std::chrono::milliseconds(0)) &&
-        dock_client_->wait_for_action_server(std::chrono::milliseconds(0)) &&
-        undock_client_->wait_for_action_server(std::chrono::milliseconds(0)) &&
-        charge_client_->wait_for_action_server(std::chrono::milliseconds(0)) &&
-        clear_client_->wait_for_service(std::chrono::milliseconds(0));
+    const bool actions = remoteActionServersReady() &&
+                         (coupled_ready || clear_client_->wait_for_service(std::chrono::milliseconds(0)));
     if (services && actions) {
       return;
     }
     if (!spin_callbacks_on_node_thread_) {
-      spinBackend(node_, spin_executor_);
+      for (int i = 0; i < 32; ++i) {
+        spinBackend(node_, spin_executor_);
+      }
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
   }
 }
 

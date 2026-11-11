@@ -10,8 +10,10 @@
 #include "bt_core/frozen_world.hpp"
 #include "bt_core/grid_sim.hpp"
 
+#include <atomic>
 #include <iostream>
 #include <string>
+#include <thread>
 
 int main(int argc, char** argv) {
   rclcpp::init(argc, argv);
@@ -32,8 +34,20 @@ int main(int argc, char** argv) {
   std::string pkg_share = ament_index_cpp::get_package_share_directory("nav2_bt_mission");
   std::string tree_xml = pkg_share + "/trees/mission.xml";
 
-  auto metrics =
-      nav2_bt_mission::runMissionRos(sid, tree_xml, backend, node, {});
+  std::atomic<bool> keep_spinning{true};
+  std::thread spinner([&]() {
+    while (keep_spinning && rclcpp::ok()) {
+      rclcpp::spin_some(node);
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+  });
+
+  auto metrics = nav2_bt_mission::runMissionRos(sid, tree_xml, backend, node, {});
+
+  keep_spinning = false;
+  if (spinner.joinable()) {
+    spinner.join();
+  }
 
   rclcpp::shutdown();
 
