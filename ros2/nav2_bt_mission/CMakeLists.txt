@@ -92,12 +92,12 @@ function(nav2_bt_link_static_btcpp target)
     set(_bt_a "${_prefix}/lib/libbehaviortree_cpp.a")
     set(_tx_a "${_prefix}/lib/libtinyxml2.a")
     if(EXISTS "${_bt_a}" AND EXISTS "${_tx_a}")
-      target_link_libraries(${target} PRIVATE "${_bt_a}" "${_tx_a}")
+      target_link_libraries(${target} "${_bt_a}" "${_tx_a}")
       return()
     endif()
   endforeach()
   if(EXISTS "/opt/btcpp-4.11/lib/libbehaviortree_cpp.a")
-    target_link_libraries(${target} PRIVATE
+    target_link_libraries(${target}
       /opt/btcpp-4.11/lib/libbehaviortree_cpp.a
       /opt/btcpp-4.11/lib/libtinyxml2.a)
   endif()
