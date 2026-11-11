@@ -38,6 +38,7 @@ int main(int argc, char** argv) {
   rclcpp::executors::SingleThreadedExecutor exec;
   backend->setSpinExecutor(&exec);
   exec.add_node(mock);
+  exec.add_node(mock->dockNode());
   exec.add_node(client);
 
   if (!backend->waitForRemoteReady()) {

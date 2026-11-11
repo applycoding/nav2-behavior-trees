@@ -47,6 +47,7 @@ class RosHarness {
     backend_->setMockPeer(mock_);
     backend_->setSpinExecutor(&exec_);
     exec_.add_node(mock_);
+    exec_.add_node(mock_->dockNode());
     exec_.add_node(client_);
     nav2_bt_mission::RosNavBackend::useNodeSpinThread(false);
     for (int i = 0; i < 12000; ++i) {

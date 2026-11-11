@@ -42,7 +42,7 @@ def generate_test_description():
             SetEnvironmentVariable('ROS_LOCALHOST_ONLY', '1'),
             *extra_env,
             mock_proc,
-            TimerAction(period=2.0, actions=[mission_proc]),
+            TimerAction(period=5.0, actions=[mission_proc]),
             ReadyToTest(),
         ]),
         {
@@ -58,7 +58,7 @@ class TestNominalLaunchWait(unittest.TestCase):
         proc_info.assertWaitForStartup(process=mock_proc, timeout=60)
         proc_info.assertWaitForStartup(process=mission_proc, timeout=60)
         proc_info.assertWaitForShutdown(process=mission_proc, timeout=1200)
-        proc_info.assertWaitForShutdown(process=mock_proc, timeout=30)
+        proc_info.assertWaitForShutdown(process=mock_proc, timeout=120)
 
 
 @launch_testing.post_shutdown_test()

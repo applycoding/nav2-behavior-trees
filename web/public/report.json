@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "git_sha": "0000000000000000000000000000000000000000",
+  "sample": false,
+  "run_id": "local",
+  "scenarios": [
+    {
+      "id": "nominal",
+      "scenario": "nominal",
+      "success": true,
+      "sim_time_sec": 308.8,
+      "cov_pct": [
+        100,
+        100,
+        100
+      ]
+    },
+    {
+      "id": "low_battery",
+      "scenario": "low_battery",
+      "success": true,
+      "sim_time_sec": 434.1,
+      "cov_pct": [
+        100,
+        100,
+        100
+      ]
+    },
+    {
+      "id": "critical_battery",
+      "scenario": "critical_battery",
+      "success": true,
+      "sim_time_sec": 441.3,
+      "cov_pct": [
+        100,
+        100,
+        100
+      ]
+    },
+    {
+      "id": "blocked_corridor",
+      "scenario": "blocked_corridor",
+      "success": true,
+      "sim_time_sec": 319,
+      "cov_pct": [
+        100,
+        100,
+        100
+      ]
+    },
+    {
+      "id": "phantom_obstacle",
+      "scenario": "phantom_obstacle",
+      "success": true,
+      "sim_time_sec": 313.9,
+      "cov_pct": [
+        100,
+        100,
+        100
+      ]
+    },
+    {
+      "id": "stuck",
+      "scenario": "stuck",
+      "success": true,
+      "sim_time_sec": 318.2,
+      "cov_pct": [
+        100,
+        100,
+        100
+      ]
+    },
+    {
+      "id": "unreachable_zone",
+      "scenario": "unreachable_zone",
+      "success": true,
+      "sim_time_sec": 240.7,
+      "cov_pct": [
+        100,
+        100,
+        0
+      ]
+    },
+    {
+      "id": "lane_obstacle",
+      "scenario": "lane_obstacle",
+      "success": true,
+      "sim_time_sec": 322.8,
+      "cov_pct": [
+        100,
+        100,
+        100
+      ]
+    },
+    {
+      "id": "lane_blocked_perm",
+      "scenario": "lane_blocked_perm",
+      "success": true,
+      "sim_time_sec": 341.2,
+      "cov_pct": [
+        100,
+        95.7,
+        100
+      ]
+    }
+  ]
+}

@@ -505,12 +505,16 @@ bool RosNavBackend::waitForRemoteReady(std::chrono::milliseconds timeout) {
   if (local_sim_) {
     return true;
   }
+  const bool paired_mock = static_cast<bool>(mock_peer_.lock());
   const auto deadline = std::chrono::steady_clock::now() + timeout;
   while (rclcpp::ok() && std::chrono::steady_clock::now() < deadline) {
-    const bool services = step_client_->wait_for_service(std::chrono::milliseconds(0)) &&
-                          sample_client_->wait_for_service(std::chrono::milliseconds(0));
-    const bool actions = remoteActionServersReadyAfterSpin() &&
-                         clear_client_->wait_for_service(std::chrono::milliseconds(0));
+    const bool services =
+        paired_mock ||
+        (step_client_->wait_for_service(std::chrono::milliseconds(0)) &&
+         sample_client_->wait_for_service(std::chrono::milliseconds(0)));
+    const bool clear_ready =
+        paired_mock || clear_client_->wait_for_service(std::chrono::milliseconds(0));
+    const bool actions = remoteActionServersReadyAfterSpin() && clear_ready && services;
     if (services && actions) {
       return true;
     }
@@ -521,10 +525,13 @@ bool RosNavBackend::waitForRemoteReady(std::chrono::milliseconds timeout) {
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
   }
-  return step_client_->wait_for_service(std::chrono::milliseconds(0)) &&
-         sample_client_->wait_for_service(std::chrono::milliseconds(0)) &&
-         remoteActionServersReady() &&
-         clear_client_->wait_for_service(std::chrono::milliseconds(0));
+  const bool services =
+      paired_mock ||
+      (step_client_->wait_for_service(std::chrono::milliseconds(0)) &&
+       sample_client_->wait_for_service(std::chrono::milliseconds(0)));
+  const bool clear_ready =
+      paired_mock || clear_client_->wait_for_service(std::chrono::milliseconds(0));
+  return services && remoteActionServersReady() && clear_ready;
 }
 
 bool RosNavBackend::followPathCanceledBeforeDockOrdered() const {
