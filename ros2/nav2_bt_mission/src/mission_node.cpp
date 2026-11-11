@@ -7,7 +7,7 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <rclcpp/rclcpp.hpp>
 
-#include "bt_core/scenarios.hpp"
+#include "bt_core/grid_sim.hpp"
 
 #include <iostream>
 #include <string>
