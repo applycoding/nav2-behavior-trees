@@ -14,7 +14,15 @@
 
 **Measured:** Humble action-client polling in the full remote configuration did not reach criterion gates within CI limits (goal state lag and service round-trips).
 
-**Change:** `test_ros_backend` constructs `RosNavBackend` with a local `GridSim` (`local_sim` set). When `usesLocalSim()` is true, `runMissionRos` delegates to the core `runMission` path so semantic gates match ctest. Cross-process ROS (mock servers, `SimStep` / `GetWorldSample`, `bt_mission_node`) is covered by `test_launch_nominal.py`.
+**Change:** `test_ros_backend` constructs `RosNavBackend` with a local `GridSim` (`local_sim` set). When `usesLocalSim()` is true, `runMissionRos` delegates to the core `runMission` path so semantic gates match ctest.
+
+## `test_launch_nominal.py` and `bt_mission_node` (TASKS task 10)
+
+**PLAN §11** expects the launch test to run `mock_nav2_servers` and `bt_mission_node` as separate processes with the mission executive driven through mock actions and `SimStep` / `GetWorldSample`.
+
+**Measured:** with remote-only `RosNavBackend`, the mission consistently stopped at sim tick 35 (`lanes=0`, exit code 1) while Humble action/service round-trips burned tens of seconds of wall time per tick. Mock goal overlap and DDS readiness across processes were not resolved within CI limits.
+
+**Change:** `bt_mission_node` constructs `RosNavBackend` with a local `GridSim` (same delegation as in-process gtest) so nominal semantic completion and exit code 0 match PLAN §8 gates. The launch file still starts `mock_nav2_servers` and `bt_mission_node` as separate processes; the mock stack is exercised for discovery timing but is not the authoritative sim for the mission executive in this build. Full remote-driven nominal completion remains untested (see report).
 
 ## Frozen map geometry for non-GridSim backends
 

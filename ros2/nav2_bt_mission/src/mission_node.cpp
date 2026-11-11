@@ -7,10 +7,10 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <rclcpp/rclcpp.hpp>
 
-#include <chrono>
+#include "bt_core/scenarios.hpp"
+
 #include <iostream>
 #include <string>
-#include <thread>
 
 int main(int argc, char** argv) {
   rclcpp::init(argc, argv);
@@ -22,22 +22,19 @@ int main(int argc, char** argv) {
   }
 
   auto node = std::make_shared<rclcpp::Node>("bt_mission_node");
-  nav2_bt_mission::RosNavBackend backend(node, nullptr);
+  auto sid = bt_core::scenarioFromName(scenario);
+  auto cfg = bt_core::configForScenario(sid);
+  bt_core::GridSim world = bt_core::GridSim::makeWorld(cfg);
+  auto sim = std::make_shared<bt_core::GridSim>(std::move(world));
+  nav2_bt_mission::RosNavBackend backend(node, sim);
 
   std::string pkg_share = ament_index_cpp::get_package_share_directory("nav2_bt_mission");
   std::string tree_xml = pkg_share + "/trees/mission.xml";
 
-  nav2_bt_mission::RosNavBackend::useNodeSpinThread(true);
-  std::thread spin_thread([node]() { rclcpp::spin(node); });
-
-  auto sid = bt_core::scenarioFromName(scenario);
   auto metrics =
       nav2_bt_mission::runMissionRos(sid, tree_xml, backend, node, {});
 
   rclcpp::shutdown();
-  if (spin_thread.joinable()) {
-    spin_thread.join();
-  }
 
   std::cout << "success=" << metrics.success << " t=" << metrics.sim_time_sec << " ticks="
             << metrics.ticks << " lanes=" << metrics.lanes_done << " backup=" << metrics.backup
