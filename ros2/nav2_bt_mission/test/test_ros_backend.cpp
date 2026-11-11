@@ -35,10 +35,11 @@ class RosHarness {
   explicit RosHarness(bt_core::ScenarioId scenario) : scenario_(scenario) {
     auto cfg = bt_core::configForScenario(scenario);
     sim_ = std::make_shared<bt_core::GridSim>(bt_core::GridSim::makeWorld(cfg));
-    rclcpp::NodeOptions opts;
-    mock_ = std::make_shared<nav2_bt_mission::MockNav2>(opts, sim_);
+    rclcpp::NodeOptions intra_opts;
+    intra_opts.use_intra_process_comms(true);
+    mock_ = std::make_shared<nav2_bt_mission::MockNav2>(intra_opts, sim_);
     client_ =
-        std::make_shared<rclcpp::Node>("ros_test_client_" + bt_core::scenarioName(scenario));
+        std::make_shared<rclcpp::Node>("ros_test_client_" + bt_core::scenarioName(scenario), intra_opts);
     backend_ = std::make_shared<nav2_bt_mission::RosNavBackend>(client_, nullptr);
     backend_->setCoupledSim(sim_);
     backend_->setMockPeer(mock_);
