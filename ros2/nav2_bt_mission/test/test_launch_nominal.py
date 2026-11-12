@@ -26,12 +26,25 @@ def install_bin(name: str) -> str:
     return os.path.join(prefix, 'lib', 'nav2_bt_mission', name)
 
 
+def cyclone_uri() -> str:
+    installed = os.path.join(
+        get_package_prefix('nav2_bt_mission'),
+        'share',
+        'nav2_bt_mission',
+        'test',
+        'cyclonedds_ci.xml',
+    )
+    if os.path.isfile(installed):
+        return f'file://{installed}'
+    path = os.path.join(os.path.dirname(__file__), 'cyclonedds_ci.xml')
+    return f'file://{path}'
+
+
 def rmw_env() -> dict:
     env = {
-        'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST',
-        'ROS_LOCALHOST_ONLY': '1',
         'ROS_DOMAIN_ID': '0',
-        'RMW_IMPLEMENTATION': 'rmw_fastrtps_cpp',
+        'RMW_IMPLEMENTATION': 'rmw_cyclonedds_cpp',
+        'CYCLONEDDS_URI': cyclone_uri(),
     }
     btcpp_lib = '/opt/btcpp-4.11/lib'
     if os.path.isdir(btcpp_lib):
@@ -58,10 +71,9 @@ def generate_test_description():
 
     return (
         LaunchDescription([
-            SetEnvironmentVariable('ROS_AUTOMATIC_DISCOVERY_RANGE', 'LOCALHOST'),
-            SetEnvironmentVariable('ROS_LOCALHOST_ONLY', '1'),
             SetEnvironmentVariable('ROS_DOMAIN_ID', '0'),
-            SetEnvironmentVariable('RMW_IMPLEMENTATION', 'rmw_fastrtps_cpp'),
+            SetEnvironmentVariable('RMW_IMPLEMENTATION', 'rmw_cyclonedds_cpp'),
+            SetEnvironmentVariable('CYCLONEDDS_URI', cyclone_uri()),
             *([AppendEnvironmentVariable('LD_LIBRARY_PATH', '/opt/btcpp-4.11/lib', separator=':')]
               if os.path.isdir('/opt/btcpp-4.11/lib') else []),
             mock_proc,

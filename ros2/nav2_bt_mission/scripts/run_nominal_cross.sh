@@ -11,10 +11,14 @@ fi
 MOCK_BIN="$1"
 MISSION_BIN="$2"
 
-export ROS_AUTOMATIC_DISCOVERY_RANGE="${ROS_AUTOMATIC_DISCOVERY_RANGE:-LOCALHOST}"
-export ROS_LOCALHOST_ONLY="${ROS_LOCALHOST_ONLY:-1}"
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-0}"
-export RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
+export RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_cyclonedds_cpp}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PKG_PREFIX="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+CYCLONE_DEFAULT="${PKG_PREFIX}/share/nav2_bt_mission/test/cyclonedds_ci.xml"
+if [[ -z "${CYCLONEDDS_URI:-}" && -f "$CYCLONE_DEFAULT" ]]; then
+  export CYCLONEDDS_URI="file://${CYCLONE_DEFAULT}"
+fi
 
 mock_pid=""
 on_exit() {

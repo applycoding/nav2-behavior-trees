@@ -18,7 +18,7 @@ jobs:
         shell: bash
     container:
       image: ros:humble-ros-base-jammy@sha256:d9bcf2e6f72df127fdee07048c2e87b1b4b9a59a74af0592f4489fc2844aa855
-      options: --network host
+      options: --ipc=host
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -70,8 +70,7 @@ jobs:
           if [ -d /opt/btcpp-4.11/lib ]; then
             export LD_LIBRARY_PATH=/opt/btcpp-4.11/lib:${LD_LIBRARY_PATH:-}
           fi
-          export ROS_LOCALHOST_ONLY=1
-          export ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
-          export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+          export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+          export CYCLONEDDS_URI="file://${GITHUB_WORKSPACE}/ros2/nav2_bt_mission/test/cyclonedds_ci.xml"
           colcon test --packages-select nav2_bt_mission --event-handlers console_direct+
           colcon test-result --verbose
