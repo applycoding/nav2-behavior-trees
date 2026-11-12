@@ -11,29 +11,19 @@ fi
 MOCK_BIN="$1"
 MISSION_BIN="$2"
 
+export ROS_AUTOMATIC_DISCOVERY_RANGE="${ROS_AUTOMATIC_DISCOVERY_RANGE:-LOCALHOST}"
+export ROS_LOCALHOST_ONLY="${ROS_LOCALHOST_ONLY:-1}"
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-0}"
 export RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
-export ROS_DISCOVERY_SERVER="${ROS_DISCOVERY_SERVER:-;127.0.0.1:11811}"
 
-disc_pid=""
 mock_pid=""
 on_exit() {
-  if [[ -n "$disc_pid" ]] && kill -0 "$disc_pid" 2>/dev/null; then
-    kill -TERM "$disc_pid" 2>/dev/null || true
-    wait "$disc_pid" 2>/dev/null || true
-  fi
   if [[ -n "$mock_pid" ]] && kill -0 "$mock_pid" 2>/dev/null; then
     kill -TERM "$mock_pid" 2>/dev/null || true
     wait "$mock_pid" 2>/dev/null || true
   fi
 }
 trap on_exit EXIT
-
-if command -v fastdds >/dev/null 2>&1; then
-  fastdds discovery -i 0 &
-  disc_pid=$!
-  sleep 2
-fi
 
 "$MOCK_BIN" &
 mock_pid=$!

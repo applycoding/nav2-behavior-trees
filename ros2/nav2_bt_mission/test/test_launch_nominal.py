@@ -20,8 +20,6 @@ from launch.actions import (
 from launch.event_handlers import OnProcessExit
 from launch_testing.actions import ReadyToTest
 
-DISCOVERY_SERVER = '127.0.0.1:11811'
-
 
 def install_bin(name: str) -> str:
     prefix = get_package_prefix('nav2_bt_mission')
@@ -30,9 +28,10 @@ def install_bin(name: str) -> str:
 
 def rmw_env() -> dict:
     env = {
+        'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST',
+        'ROS_LOCALHOST_ONLY': '1',
         'ROS_DOMAIN_ID': '0',
         'RMW_IMPLEMENTATION': 'rmw_fastrtps_cpp',
-        'ROS_DISCOVERY_SERVER': f';{DISCOVERY_SERVER}',
     }
     btcpp_lib = '/opt/btcpp-4.11/lib'
     if os.path.isdir(btcpp_lib):
@@ -44,12 +43,6 @@ def rmw_env() -> dict:
 def generate_test_description():
     proc_env = rmw_env()
 
-    discovery_proc = ExecuteProcess(
-        cmd=['fastdds', 'discovery', '-i', '0'],
-        output='screen',
-        additional_env=proc_env,
-        name='fastdds_discovery_server',
-    )
     mock_proc = ExecuteProcess(
         cmd=[install_bin('mock_nav2_servers')],
         output='screen',
@@ -65,19 +58,18 @@ def generate_test_description():
 
     return (
         LaunchDescription([
+            SetEnvironmentVariable('ROS_AUTOMATIC_DISCOVERY_RANGE', 'LOCALHOST'),
+            SetEnvironmentVariable('ROS_LOCALHOST_ONLY', '1'),
             SetEnvironmentVariable('ROS_DOMAIN_ID', '0'),
             SetEnvironmentVariable('RMW_IMPLEMENTATION', 'rmw_fastrtps_cpp'),
-            SetEnvironmentVariable('ROS_DISCOVERY_SERVER', f';{DISCOVERY_SERVER}'),
             *([AppendEnvironmentVariable('LD_LIBRARY_PATH', '/opt/btcpp-4.11/lib', separator=':')]
               if os.path.isdir('/opt/btcpp-4.11/lib') else []),
-            discovery_proc,
-            TimerAction(period=2.0, actions=[mock_proc]),
-            TimerAction(period=8.0, actions=[mission_proc]),
+            mock_proc,
+            TimerAction(period=5.0, actions=[mission_proc]),
             RegisterEventHandler(OnProcessExit(target_action=mission_proc, on_exit=[Shutdown()])),
             ReadyToTest(),
         ]),
         {
-            'discovery_proc': discovery_proc,
             'mock_proc': mock_proc,
             'mission_proc': mission_proc,
         },
