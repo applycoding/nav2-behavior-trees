@@ -228,22 +228,22 @@ Node registry (all names must match the XML exactly):
 - The row y = 20.
 
 **Doors** (wall cells opened):
-- A–B: x = 30, y 10–12.
-- B–hall: x 44–46, y = 20.
-- A–C: x 14–16, y = 20.
-- C–hall: x = 30, y 28–30.
+- A-B: x = 30, y 10-12.
+- B-hall: x 44-46, y = 20.
+- A-C: x 14-16, y = 20.
+- C-hall: x = 30, y 28-30.
 
 **Furniture:**
-- In A: x 12–15, y 8–10.
-- In B: x 40–42, y 12–13.
+- In A: x 12-15, y 8-10.
+- In B: x 40-42, y 12-13.
 
 **Zones** (inclusive cell rectangles), processed in this order:
 
 | Zone | Cells | Free cells | Lanes |
 | --- | --- | --- | --- |
-| A | (4,4)–(24,15) | 240 | 7 |
-| B | (35,4)–(54,15) | 234 | 7 |
-| C | (4,24)–(24,34) | 231 | 5 |
+| A | (4,4)-(24,15) | 240 | 7 |
+| B | (35,4)-(54,15) | 234 | 7 |
+| C | (4,24)-(24,34) | 231 | 5 |
 
 That makes **19 lanes in total**.
 
@@ -253,7 +253,7 @@ That makes **19 lanes in total**.
 
 **Motion:**
 - 0.4 m/s, i.e. 0.2 cells per tick.
-- 8-connected A* with an octile heuristic, no corner cutting, and a fixed neighbour order (dx then dy, from −1 to 1).
+- 8-connected A* with an octile heuristic, no corner cutting, and a fixed neighbour order (dx then dy, from -1 to 1).
 - A* runs on the *costmap* (real obstacles plus phantom cells). Motion is checked against the *real* map. Before entering each next cell, the sim checks whether it is really occupied; if so, the goal fails with `BLOCKED` without moving.
 - `collisions` counts entries into a really occupied cell. It must be 0. It is a separate count from planner failures and fault aborts.
 - Coverage: while brushes are on (the straight part of a lane only), each cell entered marks its 3 × 3 neighbourhood as covered.
@@ -292,10 +292,10 @@ Termination comes when:
 | `nominal` | battery0 = 100, zones A, B, C |
 | `low_battery` | battery0 = 30 |
 | `critical_battery` | at tick 1200 (t = 120 s), battery = min(battery, 8) |
-| `blocked_corridor` | cells x = 52, y 21–38 are really occupied until t = 12 s |
+| `blocked_corridor` | cells x = 52, y 21-38 are really occupied until t = 12 s |
 | `phantom_obstacle` | the same cells are costmap-only (phantom) until `ClearCostmap` |
 | `stuck` | at t = 40 s the robot becomes stuck: each motion goal fails with `STUCK` after 2 s without progress, until a `BackUp` completes |
-| `unreachable_zone` | the A–C and C–hall doors stay closed, so C has no path |
+| `unreachable_zone` | the A-C and C-hall doors stay closed, so C has no path |
 | `lane_obstacle` | when lane 3 of zone B starts, its midpoint cell is occupied for 8 s |
 | `lane_blocked_perm` | the same, but the obstacle is permanent |
 
@@ -348,7 +348,7 @@ The gates sit about 1.5× beyond the values the prototype measured (in brackets)
 
 ## 9. Verification record
 
-A throwaway C++ prototype (not shipped) implemented §5–§7 against BehaviorTree.CPP 4.11.0 built from source with g++ 14. Each scenario ran twice, and the transition-trace hashes matched in all runs.
+A throwaway C++ prototype (not shipped) implemented §5-§7 against BehaviorTree.CPP 4.11.0 built from source with g++ 14. Each scenario ran twice, and the transition-trace hashes matched in all runs.
 
 | Scenario | Product tree | Notes |
 | --- | --- | --- |
@@ -364,7 +364,7 @@ A throwaway C++ prototype (not shipped) implemented §5–§7 against BehaviorTr
 
 Goal overlap was 0 and collisions were 0 in every product run.
 
-The mutant results are recorded in criteria 14–18. `lane_obstacle` does **not** separate the no-recovery mutant (an 8 s obstacle clears on its own within 3 retries), so it is not used as a negative gate.
+The mutant results are recorded in criteria 14-18. `lane_obstacle` does **not** separate the no-recovery mutant (an 8 s obstacle clears on its own within 3 retries), so it is not used as a negative gate.
 
 ## 10. Trace format
 

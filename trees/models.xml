@@ -1,0 +1,27 @@
+<root BTCPP_format="4" BTCPP_version="4.11">
+    <TreeNodesModel>
+        <Action ID="AdvanceLane"/>
+        <Action ID="BackUp"/>
+        <Condition ID="BatteryOk"/>
+        <Action ID="Charge"/>
+        <Action ID="ClearCostmap"/>
+        <Action ID="ClearNeedCharge"/>
+        <Action ID="Dock"/>
+        <Action ID="FollowLane"/>
+        <Condition ID="HasNextLane"/>
+        <Condition ID="IsDocked"/>
+        <Condition ID="IsQueueEmpty"/>
+        <Condition ID="IsStuck"/>
+        <Action ID="MarkZoneDone"/>
+        <Action ID="MarkZoneSkipped"/>
+        <Action ID="NavigateToDock"/>
+        <Action ID="NavigateToZone"/>
+        <Condition ID="NeedCharge"/>
+        <Action ID="SelectZone"/>
+        <Action ID="SimWait">
+            <input_port name="sec" type="double"/>
+        </Action>
+        <Action ID="SkipLane"/>
+        <Action ID="Undock"/>
+    </TreeNodesModel>
+</root>

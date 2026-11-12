@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Arpan Bom
+set -euo pipefail
+
+if [[ $# -lt 2 ]]; then
+  echo "usage: run_nominal_cross.sh MOCK_BIN MISSION_BIN" >&2
+  exit 2
+fi
+
+MOCK_BIN="$1"
+MISSION_BIN="$2"
+
+export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-0}"
+export RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_cyclonedds_cpp}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PKG_PREFIX="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+CYCLONE_DEFAULT="${PKG_PREFIX}/share/nav2_bt_mission/test/cyclonedds_ci.xml"
+if [[ -z "${CYCLONEDDS_URI:-}" && -f "$CYCLONE_DEFAULT" ]]; then
+  export CYCLONEDDS_URI="file://${CYCLONE_DEFAULT}"
+fi
+
+mock_pid=""
+on_exit() {
+  if [[ -n "$mock_pid" ]] && kill -0 "$mock_pid" 2>/dev/null; then
+    kill -TERM "$mock_pid" 2>/dev/null || true
+    wait "$mock_pid" 2>/dev/null || true
+  fi
+}
+trap on_exit EXIT
+
+"$MOCK_BIN" &
+mock_pid=$!
+
+for _ in $(seq 1 20); do
+  if ! kill -0 "$mock_pid" 2>/dev/null; then
+    echo "mock_nav2_servers exited before mission start" >&2
+    exit 1
+  fi
+  sleep 1
+done
+
+set +e
+"$MISSION_BIN" --scenario nominal
+mission_ec=$?
+set -e
+
+if ! kill -0 "$mock_pid" 2>/dev/null; then
+  echo "mock_nav2_servers died during mission (exit implied non-zero)" >&2
+  exit 1
+fi
+
+kill -TERM "$mock_pid" 2>/dev/null || true
+wait "$mock_pid" 2>/dev/null || true
+mock_ec=$?
+if [[ "$mock_ec" -ne 0 && "$mock_ec" -ne 143 ]]; then
+  echo "mock_nav2_servers exit code $mock_ec" >&2
+  exit "$mock_ec"
+fi
+
+exit "$mission_ec"

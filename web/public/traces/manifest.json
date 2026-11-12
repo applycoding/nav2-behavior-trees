@@ -1,0 +1,49 @@
+{
+  "scenarios": [
+    {
+      "id": "nominal",
+      "dt_ms": 100,
+      "scenario": "nominal"
+    },
+    {
+      "id": "low_battery",
+      "dt_ms": 100,
+      "scenario": "low_battery"
+    },
+    {
+      "id": "critical_battery",
+      "dt_ms": 100,
+      "scenario": "critical_battery"
+    },
+    {
+      "id": "blocked_corridor",
+      "dt_ms": 100,
+      "scenario": "blocked_corridor"
+    },
+    {
+      "id": "phantom_obstacle",
+      "dt_ms": 100,
+      "scenario": "phantom_obstacle"
+    },
+    {
+      "id": "stuck",
+      "dt_ms": 100,
+      "scenario": "stuck"
+    },
+    {
+      "id": "unreachable_zone",
+      "dt_ms": 100,
+      "scenario": "unreachable_zone"
+    },
+    {
+      "id": "lane_obstacle",
+      "dt_ms": 100,
+      "scenario": "lane_obstacle"
+    },
+    {
+      "id": "lane_blocked_perm",
+      "dt_ms": 100,
+      "scenario": "lane_blocked_perm"
+    }
+  ]
+}

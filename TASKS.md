@@ -28,7 +28,7 @@ A task is done only when its **Accept** checks pass.
 ## 3. NavBackend and GridSim
 
 - Write `nav_backend.hpp` (PLAN §4).
-- Implement `GridSim` with the frozen map, A*, motion, real versus costmap occupancy, coverage, battery, timed actions, the tick order, overlap and collision counters, and the scenario event hooks (PLAN §6–§7).
+- Implement `GridSim` with the frozen map, A*, motion, real versus costmap occupancy, coverage, battery, timed actions, the tick order, overlap and collision counters, and the scenario event hooks (PLAN §6-§7).
 - Write unit tests on a hand-built 5×5 grid. Expected masks and paths must be written by hand, not recomputed with production code. Cover these cases:
   - corner cutting is forbidden
   - BLOCKED fails without moving
@@ -60,7 +60,7 @@ A task is done only when its **Accept** checks pass.
 
 ## 6. Scenario gates
 
-- Write one gtest per scenario, encoding criteria 3–12 exactly, including the event-order checks:
+- Write one gtest per scenario, encoding criteria 3-12 exactly, including the event-order checks:
   - critical: halt within 2 ticks, then `NavigateToDock` is the next goal;
   - low: no halted `FollowLane`;
   - unreachable: exactly 4 attempts;
@@ -71,9 +71,9 @@ A task is done only when its **Accept** checks pass.
 ## 7. Mutants
 
 - Add `trees/mutants/*.xml` and the two mutant builds.
-- Each mutant test runs the shared gate evaluator and asserts that the **named** gate fails (criteria 14–18), not just any failure.
+- Each mutant test runs the shared gate evaluator and asserts that the **named** gate fails (criteria 14-18), not just any failure.
 
-**Accept:** criteria 14–18 pass, and the product tree passes the same evaluator.
+**Accept:** criteria 14-18 pass, and the product tree passes the same evaluator.
 
 ## 8. Python schema
 

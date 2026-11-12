@@ -1,0 +1,55 @@
+nav2-behavior-trees
+
+Copyright 2026 Arpan Bom
+
+Third-party components used to build, test, and publish this project (see REFERENCES.md for
+idea sources, not bundled code):
+
+C++ (fetched at configure time unless noted)
+- BehaviorTree.CPP 4.11.0 (commit 8dad25dce26c3fd0787ff5c8790714bc6159dabe): MIT
+- Bundled into BehaviorTree.CPP static libs at that commit (linked from our binaries):
+  - 3rdparty/tinyxml2: MIT (zlib-style permissive)
+  - 3rdparty/minitrace: MIT
+  - 3rdparty/minicoro: MIT or Unlicense (per upstream LICENSE)
+  - 3rdparty/flatbuffers: Apache-2.0
+  - include/behaviortree_cpp/contrib/json.hpp (nlohmann/json): MIT
+  - include/behaviortree_cpp/contrib/magic_enum.hpp: MIT
+  - include/behaviortree_cpp/contrib/any.hpp: Boost Software License 1.0
+  - include/behaviortree_cpp/contrib/expected.hpp: Boost Software License 1.0
+- GoogleTest 1.18.0 (commit 063de7e9578f82b369302001269680b4b1553359): BSD-3-Clause
+- OpenSSL 3.x libssl/libcrypto (Ubuntu 24.04 libssl-dev 3.0.13-0ubuntu3.16, find_package OpenSSL): Apache-2.0
+
+Node / TypeScript (web viewer, npm ci)
+- Node.js 26.13.0: MIT
+- TypeScript 7.0.2: Apache-2.0
+- Vite 8.3.7: MIT
+- Vitest 5.1.0: MIT
+- @playwright/test 1.65.0: Apache-2.0
+- @types/node 22.20.5: MIT
+
+Playwright browser downloads (@playwright/test 1.65.0, chromium revision 1254)
+- Chrome for Testing / chromium 158.0.8127.18 (headless shell same build): BSD-3-Clause
+- playwright ffmpeg build (browser media): LGPL-2.1+ (per upstream distribution)
+
+Python (trace schema tests)
+- pytest 9.2.0: MIT
+- iniconfig 2.3.1: MIT
+- packaging 26.3: Apache-2.0 and BSD-2-Clause (dual-licensed)
+- pluggy 1.7.0: MIT
+- pygments 2.21.0: BSD-2-Clause
+
+GitHub Actions (MIT; pinned by commit SHA in .github/workflows/)
+- actions/checkout v7.0.1 (3d3c42e5aac5ba805825da76410c181273ba90b1)
+- actions/setup-node v7.1.0 (949feb2413d6458794dcd2491c4babbbce0c15c1)
+- actions/setup-python v7.1.0 (6d4fd22b20465ccc0f7354476588e8df7c9ca0e0)
+- actions/configure-pages v6.0.0 (45bfe0192ca1faeb007ade9deae92b16b8254a0d)
+- actions/upload-pages-artifact v5.0.0 (fc324d3547104276b827a68afc52ff2a11cc49c9)
+- actions/deploy-pages v5.0.1 (368f82528645a54fb793d4d04e342629a3f51346)
+- actions/upload-artifact v7.0.2 (cf430e030ddbb5b0abf93d22962f4752f3646cd9)
+
+ROS 2 Humble (container image ros:humble-ros-base-jammy, digest sha256:d9bcf2e6f72df127fdee07048c2e87b1b4b9a59a74af0592f4489fc2844aa855)
+- nav2_msgs 1.1.x (ROS distro humble): Apache-2.0 per package.xml
+- rclcpp, rclcpp_action (humble): Apache-2.0 per package.xml
+- Optional ROS job also installs BehaviorTree.CPP 4.11.0 into /opt/btcpp-4.11 including libtinyxml2.a
+
+Idea references: REFERENCES.md (titles and pointers only; no third-party source is copied).

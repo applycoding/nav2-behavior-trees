@@ -1,0 +1,76 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Arpan Bom
+
+name: ROS
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  container:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+    container:
+      image: ros:humble-ros-base-jammy@sha256:d9bcf2e6f72df127fdee07048c2e87b1b4b9a59a74af0592f4489fc2844aa855
+      options: --ipc=host
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Ensure BehaviorTree.CPP 4.11.0
+        run: |
+          set -euo pipefail
+          chmod +x ros2/scripts/ensure_btcpp_4_11.sh
+          apt-get update
+          apt-get install -y git libssl-dev ros-humble-rmw-cyclonedds-cpp fastdds-tools
+          if ! ros2/scripts/ensure_btcpp_4_11.sh; then
+            exit 1
+          fi
+          if [ -d /opt/btcpp-4.11 ]; then
+            echo "CMAKE_PREFIX_PATH=/opt/btcpp-4.11" >> "$GITHUB_ENV"
+            echo "BTCPP_INSTALL_LIB=/opt/btcpp-4.11/lib" >> "$GITHUB_ENV"
+          fi
+          apt_ver=$(dpkg-query -W -f='${Version}' ros-humble-behaviortree-cpp 2>/dev/null || true)
+          if [ -n "$apt_ver" ] && [[ "$apt_ver" == 4.11.0* ]]; then
+            echo "CI using apt BT.CPP $apt_ver"
+          elif [ -d /opt/btcpp-4.11 ] && [ "$(git -C /tmp/btcpp-src rev-parse HEAD 2>/dev/null)" = "8dad25dce26c3fd0787ff5c8790714bc6159dabe" ]; then
+            echo "CI using FetchContent BT.CPP 4.11.0 at commit 8dad25dce26c3fd0787ff5c8790714bc6159dabe"
+          else
+            echo "Neither apt nor FetchContent yielded BT.CPP 4.11.0" >&2
+            exit 1
+          fi
+
+      - name: rosdep and build
+        run: |
+          set -eo pipefail
+          set +u
+          source /opt/ros/humble/setup.bash
+          set -u
+          cd ros2
+          rm -rf build install log
+          rosdep update
+          rosdep install --from-paths . --ignore-src -r -y --skip-keys=behaviortree_cpp
+          if [ -d /opt/btcpp-4.11 ]; then
+            export LD_LIBRARY_PATH=/opt/btcpp-4.11/lib:${LD_LIBRARY_PATH:-}
+            export BTCPP_INSTALL_LIB=/opt/btcpp-4.11/lib
+          fi
+          colcon build --packages-select nav2_bt_mission --cmake-args \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH:-}" \
+            -DCMAKE_FIND_PACKAGE_PREFER_CONFIG=ON
+          set +u
+          source install/setup.bash
+          set -u
+          if [ -d /opt/btcpp-4.11/lib ]; then
+            export LD_LIBRARY_PATH=/opt/btcpp-4.11/lib:${LD_LIBRARY_PATH:-}
+          fi
+          export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+          export CYCLONEDDS_URI="file://${GITHUB_WORKSPACE}/ros2/nav2_bt_mission/test/cyclonedds_ci.xml"
+          colcon test --packages-select nav2_bt_mission --event-handlers console_direct+
+          colcon test-result --verbose

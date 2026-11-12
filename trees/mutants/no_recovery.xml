@@ -1,0 +1,86 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Arpan Bom -->
+<root BTCPP_format="4" main_tree_to_execute="Mission">
+  <BehaviorTree ID="Mission">
+    <Sequence>
+      <Undock/>
+      <RetryUntilSuccessful num_attempts="50">
+        <ReactiveFallback name="Step">
+          <IsQueueEmpty/>
+          <ForceFailure>
+            <ReactiveSequence name="Work">
+              <BatteryOk/>
+              <SubTree ID="CleanZone"/>
+            </ReactiveSequence>
+          </ForceFailure>
+          <ForceFailure>
+            <Sequence><NeedCharge/><SubTree ID="DockAndCharge"/></Sequence>
+          </ForceFailure>
+        </ReactiveFallback>
+      </RetryUntilSuccessful>
+      <SubTree ID="ReturnHome"/>
+    </Sequence>
+  </BehaviorTree>
+
+  <BehaviorTree ID="CleanZone">
+    <Sequence>
+      <SelectZone/>
+      <Fallback name="ZoneOrSkip">
+        <Sequence>
+          <RetryUntilSuccessful num_attempts="4">
+            <Fallback><NavigateToZone/><ForceFailure><AlwaysFailure/></ForceFailure></Fallback>
+          </RetryUntilSuccessful>
+          <ForceSuccess>
+            <KeepRunningUntilFailure>
+              <Sequence>
+                <HasNextLane/>
+                <Fallback name="LaneOrSkip">
+                  <Sequence>
+                  <RetryUntilSuccessful num_attempts="3">
+                    <Fallback><FollowLane/><ForceFailure><AlwaysFailure/></ForceFailure></Fallback>
+                  </RetryUntilSuccessful>
+                  <AdvanceLane/>
+                  </Sequence>
+                  <SkipLane/>
+                </Fallback>
+              </Sequence>
+            </KeepRunningUntilFailure>
+          </ForceSuccess>
+          <MarkZoneDone/>
+        </Sequence>
+        <MarkZoneSkipped/>
+      </Fallback>
+    </Sequence>
+  </BehaviorTree>
+
+  <BehaviorTree ID="NavRecovery">
+    <Fallback>
+      <Sequence><IsStuck/><BackUp/></Sequence>
+      <Sequence><ClearCostmap/><SimWait sec="5"/></Sequence>
+    </Fallback>
+  </BehaviorTree>
+
+  <BehaviorTree ID="DockAndCharge">
+    <Sequence>
+      <RetryUntilSuccessful num_attempts="6">
+        <Fallback><NavigateToDock/><ForceFailure><AlwaysFailure/></ForceFailure></Fallback>
+      </RetryUntilSuccessful>
+      <Dock/>
+      <Charge/>
+      <Undock/>
+      <ClearNeedCharge/>
+    </Sequence>
+  </BehaviorTree>
+
+  <BehaviorTree ID="ReturnHome">
+    <Fallback>
+      <IsDocked/>
+      <Sequence>
+        <RetryUntilSuccessful num_attempts="6">
+          <Fallback><NavigateToDock/><ForceFailure><AlwaysFailure/></ForceFailure></Fallback>
+        </RetryUntilSuccessful>
+        <Dock/>
+      </Sequence>
+    </Fallback>
+  </BehaviorTree>
+</root>

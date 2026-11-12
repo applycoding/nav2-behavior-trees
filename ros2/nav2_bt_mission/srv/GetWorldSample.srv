@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Arpan Bom
+---
+float64 x
+float64 y
+float64 battery
+bool docked
+bool brushes
+float64[3] cov_pct
+int32 tick
+int32 collisions
+int32 goal_overlap
+float64 min_battery
+int32 critical_battery_event_tick

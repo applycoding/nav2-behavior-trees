@@ -1,0 +1,169 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Arpan Bom
+
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Authorship (criterion 23)
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.event.after }}
+        run: |
+          set -euo pipefail
+          bad=0
+          if [ -n "${BEFORE:-}" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ] && [ -n "${AFTER:-}" ]; then
+            range="$BEFORE..$AFTER"
+          else
+            range="origin/main..HEAD"
+          fi
+          if ! git rev-parse "$range" >/dev/null 2>&1; then
+            range="HEAD"
+          fi
+          while read -r sha; do
+            author=$(git log -1 --format='%an <%ae>' "$sha")
+            committer=$(git log -1 --format='%cn <%ce>' "$sha")
+            if [ "$author" != "Arpan Bom <applycoding@gmail.com>" ] || \
+               [ "$committer" != "Arpan Bom <applycoding@gmail.com>" ]; then
+              echo "unexpected author/committer on $sha: $author | $committer"
+              bad=1
+            fi
+            body=$(git log -1 --format='%b' "$sha")
+            if echo "$body" | grep -qi 'Co-authored-by'; then
+              echo "Co-authored-by trailer on $sha"
+              bad=1
+            fi
+          done < <(git rev-list --no-merges $range)
+          exit "$bad"
+
+      - name: Hygiene (NOTICE, dashes, README paths)
+        run: |
+          chmod +x ci/*.sh
+          ./ci/check_notice.sh
+          ./ci/check_unicode_dashes.sh
+          probe_dir="$(mktemp -d)"
+          printf '\xe2\x80\x94' >"$probe_dir/em_dash.txt"
+          if ./ci/check_unicode_dashes.sh "$probe_dir"; then
+            echo "unicode dash self-test: expected failure on U+2014 file"
+            exit 1
+          fi
+          ./ci/check_readme_paths.sh
+          ./ci/check_public_traces.sh
+
+      - name: Toolchain versions
+        run: |
+          g++-13 --version | head -1
+          cmake --version | head -1
+
+      - name: Install build dependencies
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq libssl-dev
+
+      - name: Configure and test
+        run: |
+          cmake --preset default
+          cmake --build build --parallel
+          ctest --test-dir build --output-on-failure
+
+      - name: Generate traces
+        run: |
+          set -euo pipefail
+          mkdir -p traces/ci
+          for s in nominal low_battery critical_battery blocked_corridor \
+            phantom_obstacle stuck unreachable_zone lane_obstacle lane_blocked_perm; do
+            mkdir -p "traces/ci/$s"
+            ./build/bt_mission --scenario "$s" --tree trees/mission.xml \
+              --out "traces/ci/$s"
+          done
+
+      - name: Golden hashes
+        run: |
+          set -euo pipefail
+          trace_count=0
+          metrics_count=0
+          while read -r hash path; do
+            [ -z "$hash" ] && continue
+            case "$path" in
+              traces/*/trace.jsonl)
+                scenario="${path#traces/}"
+                scenario="${scenario%/trace.jsonl}"
+                test_path="traces/ci/${scenario}/trace.jsonl"
+                ;;
+              traces/*/metrics.json)
+                scenario="${path#traces/}"
+                scenario="${scenario%/metrics.json}"
+                test_path="traces/ci/${scenario}/metrics.json"
+                ;;
+              *) continue ;;
+            esac
+            if [ ! -f "$test_path" ]; then
+              echo "missing $test_path"
+              exit 1
+            fi
+            echo "$hash  $test_path" | sha256sum -c -
+            case "$path" in
+              traces/*/trace.jsonl) trace_count=$((trace_count + 1)) ;;
+              traces/*/metrics.json) metrics_count=$((metrics_count + 1)) ;;
+            esac
+          done < traces/golden.sha256
+          if [ "$trace_count" -ne 9 ] || [ "$metrics_count" -ne 9 ]; then
+            echo "expected 9 trace and 9 metrics golden comparisons, got $trace_count and $metrics_count"
+            exit 1
+          fi
+
+      - name: Python trace schema (criterion 20)
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+
+      - name: pytest
+        run: |
+          python -m pip install --require-hashes -r python/requirements.txt
+          python -m pytest python/test_trace_schema.py -v
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "26.13.0"
+
+      - name: Web typecheck, unit tests, Playwright
+        working-directory: web
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          TRACE_ROOT: ${{ github.workspace }}/traces/ci
+        run: |
+          npm ci
+          npm run typecheck
+          npm test
+          for attempt in 1 2 3 4 5; do
+            if npx playwright install --with-deps chromium; then
+              break
+            fi
+            if [ "$attempt" -eq 5 ]; then
+              exit 1
+            fi
+            sleep $((attempt * 30))
+          done
+          node scripts/write-report.mjs
+          npm run build
+          npm run test:e2e
+
+      - name: Upload traces
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: traces
+          path: traces/ci
