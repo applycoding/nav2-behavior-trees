@@ -30,11 +30,9 @@ def install_bin(name: str) -> str:
 
 def rmw_env() -> dict:
     env = {
-        'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST',
-        'ROS_LOCALHOST_ONLY': '1',
         'ROS_DOMAIN_ID': '0',
         'RMW_IMPLEMENTATION': 'rmw_fastrtps_cpp',
-        'ROS_DISCOVERY_SERVER': DISCOVERY_SERVER,
+        'ROS_DISCOVERY_SERVER': f';{DISCOVERY_SERVER}',
     }
     btcpp_lib = '/opt/btcpp-4.11/lib'
     if os.path.isdir(btcpp_lib):
@@ -67,11 +65,9 @@ def generate_test_description():
 
     return (
         LaunchDescription([
-            SetEnvironmentVariable('ROS_AUTOMATIC_DISCOVERY_RANGE', 'LOCALHOST'),
-            SetEnvironmentVariable('ROS_LOCALHOST_ONLY', '1'),
             SetEnvironmentVariable('ROS_DOMAIN_ID', '0'),
             SetEnvironmentVariable('RMW_IMPLEMENTATION', 'rmw_fastrtps_cpp'),
-            SetEnvironmentVariable('ROS_DISCOVERY_SERVER', DISCOVERY_SERVER),
+            SetEnvironmentVariable('ROS_DISCOVERY_SERVER', f';{DISCOVERY_SERVER}'),
             *([AppendEnvironmentVariable('LD_LIBRARY_PATH', '/opt/btcpp-4.11/lib', separator=':')]
               if os.path.isdir('/opt/btcpp-4.11/lib') else []),
             discovery_proc,
